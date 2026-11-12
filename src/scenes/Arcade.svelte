@@ -3,8 +3,10 @@
   import { game } from '../lib/state.svelte'
   import { sfx } from '../lib/audio'
   import ArcadeHeader from '../components/ArcadeHeader.svelte'
+  import { KARTU_DOA } from '../doa'
 
   const sisa = $derived(config.foto.length - game.collected.length)
+  const sisaDoa = $derived(KARTU_DOA.length - game.doa.length)
   const starFound = $derived(game.secrets.includes(2))
 </script>
 
@@ -43,7 +45,7 @@
     </svg>
     <span class="txt">
       <b>Claw Machine</b>
-      <span>{sisa > 0 ? `${sisa} foto lagi nunggu dicapit` : 'Semua foto sudah kamu dapat!'}</span>
+      <span>{sisa > 0 ? `${sisa} foto lagi nunggu dicapit` : sisaDoa > 0 ? `Diisi ulang: ${sisaDoa} kartu doa` : 'Stok habis. Tahun depan lagi ya'}</span>
       <em>1 koin / main</em>
     </span>
   </button>
@@ -64,6 +66,21 @@
     <button class="card" style="background:#ECE4FF" onclick={() => game.go('tebak')}>
       <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="#23408E" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="6.5" fill="#FFFFFF" /><path d="M15.5 15.5L21 21" /><path d="M8.5 9a2 2 0 1 1 2.6 1.9c-.6.2-.6.6-.6 1.1M10.5 13.6v.2" /></svg>
       <b>Tebak Foto</b><span>makin lama makin jelas</span>
+    </button>
+    <button class="card wide" style="background:#FFF0B3" onclick={() => game.go('lari')}>
+      <svg aria-hidden="true" viewBox="0 0 48 48" fill="none" stroke="#23408E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M16 42 L32 42 L35 28 L13 28 Z" fill="#F28AA5" />
+        <path d="M11 28 C6 22 13 16 18 19 C19 11 29 11 30 19 C35 16 42 22 37 28 Z" fill="#FFFDF5" />
+        <rect x="22.5" y="8" width="3" height="9" fill="#CFE6F7" />
+        <path d="M24 2 C27 6 26 8 24 8 C22 8 21 6 24 2 Z" fill="#F6D58E" stroke-width="1.6" />
+        <circle cx="20" cy="34" r="1.3" fill="#23408E" /><circle cx="28" cy="34" r="1.3" fill="#23408E" />
+        <path d="M4 38 h5 M2 32 h6" stroke="#9AA6C8" />
+      </svg>
+      <span class="txt">
+        <b>Lari Cupcake</b>
+        <span>{game.best > 0 ? `Rekor kamu: ${game.best.toLocaleString('id-ID')}` : 'Lompati brokoli, kumpulin lilin'}</span>
+      </span>
+      <em>NEW</em>
     </button>
   </div>
 
@@ -194,6 +211,38 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 14px;
     flex-shrink: 0;
+  }
+  .card.wide {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+    position: relative;
+  }
+  .card.wide svg {
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+  }
+  .card.wide .txt {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .card.wide em {
+    position: absolute;
+    top: -10px;
+    right: 12px;
+    padding: 3px 10px;
+    border: 2px solid var(--ink);
+    border-radius: 999px;
+    background: var(--pink-dark);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 900;
+    font-style: normal;
+    letter-spacing: 1px;
+    rotate: 4deg;
   }
   .tagline {
     margin-top: 18px;

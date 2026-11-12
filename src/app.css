@@ -172,6 +172,19 @@ p {
   overscroll-behavior: contain;
 }
 
+/* Overlay layar penuh yang tetap di viewport walau scene sedang di-scroll,
+   dan tetap selebar "halaman buku" (480px) di laptop. */
+.overlay-fixed {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  max-width: 480px;
+  margin-inline: auto;
+}
+
 .ph {
   background-color: #eef3fb;
   background-image: repeating-linear-gradient(45deg, transparent 0, transparent 9px, #d6e0f0 9px, #d6e0f0 10px);

@@ -50,38 +50,62 @@ export function draw(node: SVGSVGElement, params: { delay?: number; duration?: n
   return { destroy: () => tl.kill() }
 }
 
-/** Svelte action: tahan lama (long press). */
+/**
+ * Svelte action: tahan lama (long press).
+ * - Toleransi geser 14px: jari di HP hampir selalu bergeser sedikit saat ditahan,
+ *   jadi tidak dibatalkan oleh pointerleave/gerakan kecil.
+ * - Selama ditahan, elemen diberi class `pressing` (untuk umpan balik visual).
+ * - pointercancel tetap membatalkan: itu tanda browser mengambil alih untuk scroll.
+ */
 export function longpress(node: HTMLElement, cb: () => void) {
+  const HOLD = 550
   let t: ReturnType<typeof setTimeout> | undefined
   let fired = false
-  const start = () => {
+  let sx = 0
+  let sy = 0
+  const cancel = () => {
+    clearTimeout(t)
+    node.classList.remove('pressing')
+  }
+  const start = (e: PointerEvent) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return
     fired = false
+    sx = e.clientX
+    sy = e.clientY
+    node.classList.add('pressing')
     t = setTimeout(() => {
       fired = true
+      node.classList.remove('pressing')
+      vibrate(40)
       cb()
-    }, 650)
+    }, HOLD)
   }
-  const cancel = () => clearTimeout(t)
+  const move = (e: PointerEvent) => {
+    if (Math.hypot(e.clientX - sx, e.clientY - sy) > 14) cancel()
+  }
   const click = (e: Event) => {
     if (fired) {
+      fired = false
       e.stopImmediatePropagation()
       e.preventDefault()
     }
   }
+  const noMenu = (e: Event) => e.preventDefault()
   node.addEventListener('pointerdown', start)
+  node.addEventListener('pointermove', move)
   node.addEventListener('pointerup', cancel)
-  node.addEventListener('pointerleave', cancel)
   node.addEventListener('pointercancel', cancel)
   node.addEventListener('click', click, true)
-  node.addEventListener('contextmenu', (e) => e.preventDefault())
+  node.addEventListener('contextmenu', noMenu)
   return {
     destroy() {
       cancel()
       node.removeEventListener('pointerdown', start)
+      node.removeEventListener('pointermove', move)
       node.removeEventListener('pointerup', cancel)
-      node.removeEventListener('pointerleave', cancel)
       node.removeEventListener('pointercancel', cancel)
       node.removeEventListener('click', click, true)
+      node.removeEventListener('contextmenu', noMenu)
     },
   }
 }

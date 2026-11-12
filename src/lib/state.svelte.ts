@@ -14,6 +14,7 @@ export const SCENES = [
   { id: 'photobooth', judul: 'Photobooth' },
   { id: 'memory', judul: 'Memory match' },
   { id: 'tebak', judul: 'Tebak foto' },
+  { id: 'lari', judul: 'Lari Cupcake' },
 ] as const
 
 export type SceneId = (typeof SCENES)[number]['id']
@@ -29,6 +30,9 @@ interface Saved {
   cake: CakeColors
   coins: number
   collected: number[]
+  doa: number[]
+  best: number
+  doaGame: boolean
   secrets: number[]
   muted: boolean
 }
@@ -49,6 +53,9 @@ class Game {
   cake = $state<CakeColors>({})
   coins = $state(config.koinAwal)
   collected = $state<number[]>([])
+  doa = $state<number[]>([])
+  best = $state(0)
+  doaGame = $state(false)
   secrets = $state<number[]>([])
   muted = $state(false)
   toast = $state<{ text: string; id: number } | null>(null)
@@ -64,6 +71,9 @@ class Game {
     this.cake = s.cake ?? {}
     this.coins = typeof s.coins === 'number' ? s.coins : config.koinAwal
     this.collected = Array.isArray(s.collected) ? s.collected : []
+    this.doa = Array.isArray(s.doa) ? s.doa : []
+    this.best = typeof s.best === 'number' ? s.best : 0
+    this.doaGame = !!s.doaGame
     this.secrets = Array.isArray(s.secrets) ? s.secrets : []
     this.muted = !!s.muted
   }
@@ -76,6 +86,9 @@ class Game {
       cake: $state.snapshot(this.cake),
       coins: this.coins,
       collected: $state.snapshot(this.collected),
+      doa: $state.snapshot(this.doa),
+      best: this.best,
+      doaGame: this.doaGame,
       secrets: $state.snapshot(this.secrets),
       muted: this.muted,
     }

@@ -7,6 +7,9 @@
   import { vibrate } from '../lib/fx'
   import ArcadeHeader from '../components/ArcadeHeader.svelte'
   import Prize from '../components/Prize.svelte'
+  import DoaCard from '../components/DoaCard.svelte'
+  import Rekap from '../components/Rekap.svelte'
+  import { KARTU_DOA } from '../doa'
   import Icon from '../components/Icon.svelte'
 
   const SLOTS: [number, number, number][] = [
@@ -19,14 +22,19 @@
   const RAIL_Y = 112
   const CHUTE_X = 70
 
-  const legendaryIdx = config.foto.findIndex((f) => (f as { legendary?: boolean }).legendary)
-  const remaining = $derived(config.foto.map((_, i) => i).filter((i) => !game.collected.includes(i)))
+  // Isi mesin: 8 foto dulu → setelah habis "diisi ulang" kartu doa → setelah habis: stok habis.
+  const legendaryFoto = config.foto.findIndex((f) => (f as { legendary?: boolean }).legendary)
+  const legendaryDoa = KARTU_DOA.findIndex((k) => k.rarity === 'legendary')
+  const sisaFoto = $derived(config.foto.map((_, i) => i).filter((i) => !game.collected.includes(i)))
+  const sisaDoa = $derived(KARTU_DOA.map((_, i) => i).filter((i) => !game.doa.includes(i)))
+  const mode = $derived<'foto' | 'doa' | 'habis'>(sisaFoto.length ? 'foto' : sisaDoa.length ? 'doa' : 'habis')
+  const remaining = $derived(mode === 'foto' ? sisaFoto : mode === 'doa' ? sisaDoa : [])
+  const legendaryIdx = $derived(mode === 'foto' ? legendaryFoto : legendaryDoa)
+  // legendary selalu keluar terakhir
   const queue = $derived([...remaining.filter((i) => i !== legendaryIdx), ...remaining.filter((i) => i === legendaryIdx)])
 
-  // capsule visual: slot index -> photo idx (slot terakhir dipakai legendary bila masih ada)
-  const capsules = $derived(
-    remaining.map((photo, k) => ({ photo, slot: k, gold: photo === legendaryIdx })),
-  )
+  const capsules = $derived(remaining.slice(0, SLOTS.length).map((photo, k) => ({ photo, slot: k, gold: photo === legendaryIdx })))
+  const SIGN = { foto: 'CAPIT FOTO', doa: 'CAPIT DOA', habis: 'STOK HABIS' } as const
 
   const claw = $state({ x: 200, len: 40, open: 1 })
   let busy = $state(false)
@@ -34,7 +42,20 @@
   let bubble = $state('')
   let held = $state<{ slot: number; x: number; y: number; gold: boolean; color: string } | null>(null)
   let hiddenSlot = $state<number | null>(null)
-  let prize = $state<number | null>(null)
+  let prize = $state<{ kind: 'foto' | 'doa'; idx: number } | null>(null)
+  let rekap = $state(false)
+
+  function closePrize() {
+    const wasFoto = prize?.kind === 'foto'
+    prize = null
+    // foto ke-8 baru saja didapat → tampilkan poster Rekap Kenangan
+    if (wasFoto && game.collected.length === config.foto.length) rekap = true
+  }
+
+  function closeRekap() {
+    rekap = false
+    setTimeout(() => game.say('Mesinnya diisi ulang… sekarang isinya kartu doa!', 3600), 400)
+  }
   let moveTimer: ReturnType<typeof setInterval> | undefined
 
   const headY = $derived(RAIL_Y + claw.len)
@@ -80,6 +101,7 @@
     // Hasil ditentukan dulu, animasi menyesuaikan. Pity: pasti dapat di percobaan ke-3.
     const win = attempts >= 3 || Math.random() < 0.4
     const photo = queue[0]
+    const kind = mode as 'foto' | 'doa'
     // kapsul terdekat dari posisi capit
     let best = capsules[0]
     let bd = Infinity
@@ -117,9 +139,10 @@
           held = null
           hiddenSlot = null
           attempts = 0
-          game.collected = [...game.collected, photo]
+          if (kind === 'foto') game.collected = [...game.collected, photo]
+          else game.doa = [...game.doa, photo]
           game.save()
-          prize = photo
+          prize = { kind, idx: photo }
         })
         .to(claw, { x: 200, duration: 0.6 })
     } else {
@@ -163,10 +186,10 @@
   <ArcadeHeader title="Claw Machine" coins />
 
   <div class="machine">
-    <svg role="img" aria-label="Mesin capit. {remaining.length} kapsul foto tersisa." viewBox="0 0 350 510" fill="none" stroke="#23408E" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
-      <rect x="8" y="6" width="334" height="496" rx="26" fill="#FFC9D9" />
+    <svg role="img" aria-label="Mesin capit. {remaining.length} kapsul {mode === 'doa' ? 'kartu doa' : 'foto'} tersisa." viewBox="0 0 350 510" fill="none" stroke="#23408E" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="8" y="6" width="334" height="496" rx="26" fill={mode === 'doa' ? '#D9CCF5' : '#FFC9D9'} style="transition: fill .6s" />
       <rect x="70" y="20" width="210" height="44" rx="14" fill="#FFF4CC" />
-      <text x="175" y="50" text-anchor="middle" font-family="Nunito, sans-serif" font-weight="900" font-size="20" fill="#23408E" stroke="none" letter-spacing="2">CAPIT FOTO</text>
+      <text x="175" y="50" text-anchor="middle" font-family="Nunito, sans-serif" font-weight="900" font-size="20" fill="#23408E" stroke="none" letter-spacing="2">{SIGN[mode]}</text>
       <circle cx="52" cy="42" r="6" fill="#F6D58E" /><circle cx="298" cy="42" r="6" fill="#F6D58E" />
       <rect x="30" y="80" width="290" height="330" rx="12" fill="#E8F4FF" />
       <path d="M52 96 L92 96 M48 112 L70 112 M270 380 L300 350 M286 392 L306 372" stroke="#FFFFFF" stroke-width="4" />
@@ -203,9 +226,9 @@
     {#if bubble}<span class="bubble hand">{bubble}</span>{/if}
   </div>
 
-  {#if remaining.length === 0}
-    <div class="note done">Semua foto sudah kamu dapat! Lihat di album ya.</div>
-    <button class="btn" onclick={() => game.go('album')}>Buka album</button>
+  {#if mode === 'habis'}
+    <div class="note done">Stok habis. Datang lagi tahun depan ya 😌</div>
+    <button class="btn" onclick={() => game.go('album')}>Lihat koleksimu di album</button>
   {:else}
     <div class="controls">
       <div class="dpad">
@@ -220,12 +243,17 @@
     </div>
     <div class="note">
       <span>{attempts > 0 ? `Percobaan ke-${attempts + 1}` : 'Geser capitnya, lalu tekan Capit!'}</span>
-      <b>{game.collected.length}/{config.foto.length} foto</b>
+      <b>{mode === 'foto' ? `${game.collected.length}/${config.foto.length} foto` : `${game.doa.length}/${KARTU_DOA.length} doa`}</b>
     </div>
   {/if}
 
-  {#if prize !== null}
-    <Prize index={prize} onclose={() => (prize = null)} />
+  {#if prize?.kind === 'foto'}
+    <Prize index={prize.idx} onclose={closePrize} />
+  {:else if prize?.kind === 'doa'}
+    <DoaCard index={prize.idx} onclose={closePrize} />
+  {/if}
+  {#if rekap}
+    <Rekap celebrate onclose={closeRekap} />
   {/if}
 </section>
 

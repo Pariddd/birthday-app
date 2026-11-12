@@ -17,6 +17,7 @@
   import Photobooth from './scenes/Photobooth.svelte'
   import Memory from './scenes/Memory.svelte'
   import Tebak from './scenes/Tebak.svelte'
+  import Lari from './scenes/Lari.svelte'
 
   const VIEWS = {
     kunci: Kunci,
@@ -32,6 +33,7 @@
     photobooth: Photobooth,
     memory: Memory,
     tebak: Tebak,
+    lari: Lari,
   }
 
   // Mode uji (hanya saat `npm run dev`): ?scene=lilin langsung lompat ke scene tsb.
@@ -51,7 +53,7 @@
     if (resumed) startMusic()
   }
 
-  const isArcade = $derived(['arcade', 'claw', 'album', 'photobooth', 'memory', 'tebak'].includes(game.scene))
+  const isArcade = $derived(['arcade', 'claw', 'album', 'photobooth', 'memory', 'tebak', 'lari'].includes(game.scene))
   const showChrome = $derived(game.scene !== 'kunci')
   const Current = $derived(VIEWS[game.scene])
   const dur = reducedMotion ? 0 : 450

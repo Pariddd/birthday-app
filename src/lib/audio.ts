@@ -115,6 +115,12 @@ export const sfx = {
       { f: 260 + level * 110, t: 0, d: 0.09, type: 'square', g: 0.06 },
       { f: 330 + level * 140, t: 0.05, d: 0.14, type: 'triangle', g: 0.12, slide: 420 + level * 180 },
     ]),
+  jump: () => play([{ f: 420, t: 0, d: 0.12, type: 'square', g: 0.04, slide: 780 }]),
+  candle: () => play([{ f: 1175, t: 0, d: 0.07, type: 'triangle', g: 0.09 }, { f: 1568, t: 0.06, d: 0.12, type: 'triangle', g: 0.09 }]),
+  hit: () => {
+    noise(0.25, 0.35, 600)
+    play([{ f: 300, t: 0, d: 0.35, type: 'sawtooth', g: 0.06, slide: 90 }])
+  },
   boom: () => {
     noise(0.7, 0.5, 300)
     play([{ f: 180, t: 0, d: 0.5, type: 'sine', g: 0.35, slide: 50 }])

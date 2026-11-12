@@ -22,7 +22,7 @@
   })
 </script>
 
-<div class="overlay" bind:this={root} role="dialog" aria-modal="true" aria-labelledby="prize-t" transition:fade={{ duration: 200 }}>
+<div class="overlay overlay-fixed" bind:this={root} role="dialog" aria-modal="true" aria-labelledby="prize-t" transition:fade={{ duration: 200 }}>
   <svg class="rays" aria-hidden="true" viewBox="0 0 390 844" preserveAspectRatio="xMidYMid slice" fill="none" stroke={foto.legendary ? '#F6D58E' : '#C3B1F0'} stroke-width="3" stroke-linecap="round">
     <path class="burst-line" d="M195 420 L195 120 M195 420 L340 160 M195 420 L380 330 M195 420 L370 560 M195 420 L300 720 M195 420 L90 720 M195 420 L20 560 M195 420 L10 330 M195 420 L50 160" />
   </svg>
@@ -61,8 +61,6 @@
 
 <style>
   .overlay {
-    position: absolute;
-    inset: 0;
     z-index: 30;
     background: var(--arcade-bg);
     display: flex;
