@@ -16,7 +16,7 @@
     if (reducedMotion) return
     gsap
       .timeline()
-      .from(root.querySelector('.frame'), { scale: 0.2, rotate: -30, opacity: 0, duration: 0.6, ease: 'back.out(1.6)' })
+      .from(root.querySelector('.frame'), { scale: 0.2, rotate: -30, opacity: 0, duration: 0.6, ease: 'back.out(1.6)', clearProps: 'transform,opacity' })
       .from(root.querySelectorAll('.sticker'), { scale: 0, opacity: 0, duration: 0.35, ease: 'back.out(3)', stagger: 0.15 }, '-=0.1')
       .from(root.querySelectorAll('.burst-line'), { opacity: 0, duration: 0.4 }, 0)
   })
@@ -33,12 +33,16 @@
   </div>
 
   <div class="stagec">
-    <button class="frame" class:flipped class:legendary={foto.legendary} onclick={() => (flipped = !flipped)} aria-label={flipped ? 'Lihat foto' : 'Balik foto untuk baca tulisannya'}>
-      <div class="face front">
-        <div class="photo"><Photo src={foto.src} alt="Foto kenangan {index + 1}" label="[FOTO {index + 1}]" /></div>
-      </div>
-      <div class="face back">
-        <p class="hand">{foto.caption}</p>
+    <!-- .frame = animasi pop-in (GSAP), .card3d = animasi balik (CSS).
+         Dipisah karena GSAP meninggalkan inline transform yang menimpa class .flipped. -->
+    <button class="frame" class:legendary={foto.legendary} onclick={() => (flipped = !flipped)} aria-label={flipped ? 'Lihat foto' : 'Balik foto untuk baca tulisannya'} aria-pressed={flipped}>
+      <div class="card3d" class:flipped>
+        <div class="face front">
+          <div class="photo"><Photo src={foto.src} alt="Foto kenangan {index + 1}" label="[FOTO {index + 1}]" /></div>
+        </div>
+        <div class="face back">
+          <p class="hand">{foto.caption}</p>
+        </div>
       </div>
     </button>
     <span class="tag" class:gold={foto.legendary}>{foto.legendary ? 'LEGENDARY' : 'LANGKA'}</span>
@@ -105,11 +109,18 @@
     border: none;
     background: none;
     cursor: pointer;
-    transform-style: preserve-3d;
-    transition: transform 0.6s cubic-bezier(0.3, 1.3, 0.5, 1);
+    display: block;
+    perspective: 1200px;
     rotate: -3deg;
   }
-  .frame.flipped {
+  .card3d {
+    position: absolute;
+    inset: 0;
+    transform-style: preserve-3d;
+    -webkit-transform-style: preserve-3d;
+    transition: transform 0.6s cubic-bezier(0.3, 1.3, 0.5, 1);
+  }
+  .card3d.flipped {
     transform: rotateY(180deg);
   }
   .face {
