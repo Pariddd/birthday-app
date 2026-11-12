@@ -157,7 +157,7 @@
 >
   <div class="head">
     <div>
-      <h1 class="hand">Tulis umurmu pakai kembang api</h1>
+      <h1 class="hand">Tulis umur dilla pakai kembang api</h1>
       <p>Tahan, lalu ikutin titik yang kedip.</p>
     </div>
   </div>

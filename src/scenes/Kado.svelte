@@ -9,7 +9,7 @@
 
   // Jumlah ketukan sampai kado meledak
   const TAPS = 5
-  const HINTS = ['ketuk aku!', 'lagi!', 'eh, kok gerak…', 'dikit lagi…', 'AWAS MAU MELEDAK!']
+  const HINTS = ['ketuk kado!', 'lagi!', 'eh, kok gerak…', 'dikit lagi…', 'AWAS MAU MELEDAK!']
   const BOX = ['#FBD3DE', '#F9C3D2', '#F7B0C3', '#F49CB3', '#F087A3']
 
   let taps = $state(0)
@@ -66,9 +66,9 @@
   <div class="head">
     {#if !opened}
       <h1 class="hand">Hai, {config.nama}!</h1>
-      <p>Ada yang nungguin kamu dari tadi…</p>
+      <p>Farid ada sesuatu nii liat sampe selesai yaa…</p>
     {:else}
-      <h1 class="hand big" in:fly={{ y: 20, duration: 500, delay: 500 }}>Selamat ulang tahun, {config.nama}!</h1>
+      <h1 class="hand big" in:fly={{ y: 20, duration: 500, delay: 500 }}>Selamat ulang tahun, Nora Fadilla!</h1>
     {/if}
   </div>
 
@@ -145,7 +145,7 @@
         <button class="btn" onclick={() => game.next()}>Lanjut <Icon name="next" /></button>
       </div>
     {:else}
-      <p class="muted">Nyalain suara HP-mu dulu ya</p>
+      <p class="muted">jangan lupa idupin suaranya yaa</p>
     {/if}
   </div>
 </section>

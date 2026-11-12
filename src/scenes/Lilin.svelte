@@ -305,7 +305,7 @@
     <div class="wish-back" transition:fade={{ duration: 200 }}></div>
     <div class="wish" role="dialog" aria-modal="true" aria-labelledby="wish-t" transition:scale={{ start: 0.85, duration: 300 }}>
       <h2 id="wish-t" class="hand">Make a wish</h2>
-      <p>Tutup mata sebentar, bikin permohonan… aku nggak ngintip kok.</p>
+      <p>Yeayyy, sekarang tutup mata sebentar, bikin permohonan… farid nggak ngintip kok.</p>
       <button class="btn" onclick={() => game.next()}>Sudah! <Icon name="next" /></button>
     </div>
   {/if}

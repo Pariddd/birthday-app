@@ -36,7 +36,7 @@
 
 <section class="scene">
   <p class="hand eyebrow">fakta penting hari ini:</p>
-  <p class="lead">{config.nama} sudah hidup selama</p>
+  <p class="lead">{config.nama} udah hidup selama</p>
 
   <div class="days">
     <span class="num">{fmt(hari)}</span>

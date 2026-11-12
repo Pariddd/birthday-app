@@ -70,9 +70,9 @@ export const config = {
   // Surat penutup. Setiap item = satu paragraf.
   surat: [
     "Selamat ulang tahun yang ke-21!",
-    "Nggak kerasa ya, kamu sudah resmi masuk umur yang katanya “harus mulai dewasa”. Tenang, aku nggak berharap banyak kok.",
-    "Makasih udah jadi teman yang seru, yang bisa diajak ketawa soal hal-hal nggak penting, dan tetap ada waktu hal-hal penting.",
-    "Semoga di umur ini kamu makin bahagia, makin berani ngejar yang kamu mau, dan selalu dikelilingi orang-orang baik.",
+    "Nggak kerasa yaa, dilla udah resmi masuk umur yang katanya “harus mulai dewasa”.",
+    "Makasih yaa udah jadi mau jadi kawan ngobrol farid yang seru walau farid pengen lebih sihh hehehe, yang bisa diajak ngobrol atau cerita tentang hal-hal random, dan tetap ada waktu hal-hal penting.",
+    "Semoga di umur ini dilla makin bahagia, makin berani ngejar yang dilla mau, dan selalu dikelilingi orang-orang baik, serta diberikan kemudahan, kelancaran skripsinya dan tugas kuliah dilla truss  semoga cantik dilla awet truss yaa, sehat selalu, dan makin sukses di segala hal yang dilla lakukan.",
     "Jangan lupa traktirannya.",
   ],
 
