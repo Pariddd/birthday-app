@@ -34,7 +34,7 @@ export const config = {
     { src: "/photos/foto-3.jpeg", caption: "foto dilla sebelum dianter balik" },
     {
       src: "/photos/foto-4.jpeg",
-      caption: "after photobooth ga ekspek baguss bangett hasilnyaa",
+      caption: "pap ketika dilla suka dengan cahaya ilahi",
     },
     {
       src: "/photos/foto-5.jpeg",
@@ -43,7 +43,7 @@ export const config = {
     { src: "/photos/foto-6.jpeg", caption: "pap dari acara maulid pas ppl" },
     {
       src: "/photos/foto-7.jpeg",
-      caption: "pap ketika dilla suka dengan cahaya ilahi",
+      caption: "after photobooth ga ekspek baguss bangett hasilnyaa",
     },
     {
       src: "/photos/foto-8.jpeg",
@@ -59,12 +59,12 @@ export const config = {
   // Tebak foto blur: index foto, 3 pilihan, dan index jawaban yang benar (0, 1, atau 2)
   tebakFoto: [
     {
-      foto: 7,
+      foto: 6,
       pilihan: ["Depan 33 Billiard", "Di kopi kenangan", "di gacoan"],
       benar: 0,
     },
     {
-      foto: 1,
+      foto: 0,
       pilihan: [
         "Depan toko buket bunga",
         "Lagi nunggu reda hujan didepan 33 billiard",
@@ -73,7 +73,7 @@ export const config = {
       benar: 1,
     },
     {
-      foto: 6,
+      foto: 5,
       pilihan: [
         "foto pas di rumah",
         "foto pas disekolah sma",
@@ -82,7 +82,7 @@ export const config = {
       benar: 2,
     },
     {
-      foto: 8,
+      foto: 7,
       pilihan: ["di gacoan", "di lobby 33 billiard", "di kopi kenangan"],
       benar: 1,
     },
