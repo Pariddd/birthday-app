@@ -175,7 +175,7 @@
     ctx.textAlign = 'center'
     ctx.fillStyle = '#C93D66'
     ctx.font = '700 64px Caveat, cursive'
-    ctx.fillText(`— dari ${config.pengirim}, sahabatmu`, W / 2, 1760)
+    ctx.fillText(`— dari ${config.pengirim}, juspren dilla`, W / 2, 1760)
     ctx.fillStyle = '#5A6280'
     ctx.font = '600 30px Nunito, sans-serif'
     ctx.fillText('happy birthday! jangan lupa traktirannya', W / 2, 1830)
