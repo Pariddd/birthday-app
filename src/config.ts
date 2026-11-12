@@ -24,18 +24,31 @@ export const config = {
   // Foto dengan legendary: true selalu keluar paling terakhir dan berbingkai emas.
   foto: [
     {
-      src: "/photos/foto-8.jpeg",
-      caption: "Caption foto 1 — ganti dengan cerita di balik foto ini.",
-    },
-    { src: "/photos/foto-2.jpeg", caption: "Caption foto 2" },
-    { src: "/photos/foto-3.jpeg", caption: "Caption foto 3" },
-    { src: "/photos/foto-4.jpeg", caption: "Caption foto 4" },
-    { src: "/photos/foto-5.jpeg", caption: "Caption foto 5" },
-    { src: "/photos/foto-6.jpeg", caption: "Caption foto 6" },
-    { src: "/photos/foto-7.jpeg", caption: "Caption foto 7" },
-    {
       src: "/photos/foto-1.jpeg",
-      caption: "Foto paling berkesan. Tulis pesan paling tulusmu di sini.",
+      caption: "bunganya seindah orangnyaa yaa",
+    },
+    {
+      src: "/photos/foto-2.jpeg",
+      caption: "foto dilla pertama yang gasekali liat dan farid edit",
+    },
+    { src: "/photos/foto-3.jpeg", caption: "foto dilla sebelum dianter balik" },
+    {
+      src: "/photos/foto-4.jpeg",
+      caption: "after photobooth ga ekspek baguss bangett hasilnyaa",
+    },
+    {
+      src: "/photos/foto-5.jpeg",
+      caption: "first time fotbar lucuu jugaa",
+    },
+    { src: "/photos/foto-6.jpeg", caption: "pap dari acara maulid pas ppl" },
+    {
+      src: "/photos/foto-7.jpeg",
+      caption: "pap ketika dilla suka dengan cahaya ilahi",
+    },
+    {
+      src: "/photos/foto-8.jpeg",
+      caption:
+        "sukaa banget first time diajarin gaya sama dilla dan hasilnya cakepp dehh",
       legendary: true,
     },
   ],
@@ -47,23 +60,31 @@ export const config = {
   tebakFoto: [
     {
       foto: 4,
-      pilihan: ["Pilihan momen A", "Pilihan momen B", "Pilihan momen C"],
+      pilihan: ["Depan 33 Billiard", "Di kopi kenangan", "di gacoan"],
       benar: 0,
     },
     {
-      foto: 5,
-      pilihan: ["Pilihan momen A", "Pilihan momen B", "Pilihan momen C"],
+      foto: 1,
+      pilihan: [
+        "Depan toko buket bunga",
+        "Lagi nunggu reda hujan didepan 33 billiard",
+        "di gacoan",
+      ],
       benar: 1,
     },
     {
       foto: 6,
-      pilihan: ["Pilihan momen A", "Pilihan momen B", "Pilihan momen C"],
+      pilihan: [
+        "foto pas di rumah",
+        "foto pas disekolah sma",
+        "Maulid Nabi di mts samahani",
+      ],
       benar: 2,
     },
     {
-      foto: 2,
-      pilihan: ["Pilihan momen A", "Pilihan momen B", "Pilihan momen C"],
-      benar: 0,
+      foto: 8,
+      pilihan: ["di gacoan", "di lobby 33 billiard", "di kopi kenangan"],
+      benar: 1,
     },
   ],
 
