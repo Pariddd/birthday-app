@@ -59,7 +59,7 @@ export const config = {
   // Tebak foto blur: index foto, 3 pilihan, dan index jawaban yang benar (0, 1, atau 2)
   tebakFoto: [
     {
-      foto: 4,
+      foto: 7,
       pilihan: ["Depan 33 Billiard", "Di kopi kenangan", "di gacoan"],
       benar: 0,
     },
