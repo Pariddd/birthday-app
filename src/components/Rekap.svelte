@@ -245,7 +245,10 @@
     align-items: center;
     gap: 12px;
     padding: calc(28px + var(--safe-top)) 22px calc(22px + var(--safe-bottom));
-    overflow-y: auto;
+    overflow: hidden;
+  }
+  .sheet > :not(.preview) {
+    flex-shrink: 0;
   }
   h2 {
     font-size: clamp(34px, 10vw, 44px);
@@ -258,17 +261,24 @@
     font-weight: 700;
     color: var(--muted);
   }
+  /* Kotak preview mengambil SISA tinggi layar (flex-basis 0 + min-height 0), lalu gambar
+     dibatasi 100% dari kotak itu. Dulu tinggi gambar dipatok 60vh, sehingga di HP pendek
+     kotaknya menyusut tapi gambarnya tidak → menimpa teks & tombol. */
   .preview {
-    flex: 1;
-    min-height: 260px;
+    flex: 1 1 0;
+    min-height: 0;
     width: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
+    padding: 6px 12px 14px 6px; /* ruang untuk bayangan & kemiringan gambar */
   }
   .preview img {
-    max-height: min(60vh, 560px);
+    display: block;
+    max-height: 100%;
     max-width: 100%;
+    width: auto;
+    height: auto;
     border: 2.5px solid var(--ink);
     box-shadow: 6px 6px 0 var(--ink);
     rotate: -1.5deg;
