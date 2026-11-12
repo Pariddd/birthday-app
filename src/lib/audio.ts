@@ -80,6 +80,16 @@ function noise(dur: number, gain = 0.2, freq = 1200) {
 
 export const sfx = {
   pop: () => play([{ f: 520, t: 0, d: 0.12, slide: 900, type: 'triangle' }]),
+  // ketukan kado: nada naik tiap level supaya terasa "makin tegang"
+  charge: (level: number) =>
+    play([
+      { f: 260 + level * 110, t: 0, d: 0.09, type: 'square', g: 0.06 },
+      { f: 330 + level * 140, t: 0.05, d: 0.14, type: 'triangle', g: 0.12, slide: 420 + level * 180 },
+    ]),
+  boom: () => {
+    noise(0.7, 0.5, 300)
+    play([{ f: 180, t: 0, d: 0.5, type: 'sine', g: 0.35, slide: 50 }])
+  },
   tap: () => play([{ f: 660, t: 0, d: 0.06, type: 'triangle', g: 0.1 }]),
   wrong: () => play([{ f: 220, t: 0, d: 0.14, type: 'square', g: 0.06 }, { f: 180, t: 0.12, d: 0.16, type: 'square', g: 0.06 }]),
   unlock: () => play([{ f: 523, t: 0, d: 0.12 }, { f: 659, t: 0.1, d: 0.12 }, { f: 784, t: 0.2, d: 0.25 }]),

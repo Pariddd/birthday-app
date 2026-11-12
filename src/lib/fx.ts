@@ -4,12 +4,12 @@ import { reducedMotion } from './state.svelte'
 
 const COLORS = ['#F28AA5', '#F6D58E', '#8ED3BE', '#9CCBF0', '#C3B1F0', '#23408E']
 
-export function burst(opts: { x?: number; y?: number; big?: boolean } = {}) {
-  const count = reducedMotion ? 40 : opts.big ? 180 : 90
+export function burst(opts: { x?: number; y?: number; big?: boolean; small?: boolean } = {}) {
+  const count = reducedMotion ? 40 : opts.big ? 180 : opts.small ? 14 : 90
   void confetti({
     particleCount: count,
-    spread: opts.big ? 100 : 70,
-    startVelocity: opts.big ? 45 : 32,
+    spread: opts.big ? 100 : opts.small ? 50 : 70,
+    startVelocity: opts.big ? 45 : opts.small ? 16 : 32,
     origin: { x: opts.x ?? 0.5, y: opts.y ?? 0.55 },
     colors: COLORS,
     scalar: 0.9,
