@@ -78,6 +78,35 @@ function noise(dur: number, gain = 0.2, freq = 1200) {
   src.start()
 }
 
+/** Suara angin selama tombol tiup ditahan. Mengembalikan fungsi untuk menghentikannya. */
+export function windSound(): () => void {
+  if (game.muted || !ctx) return () => {}
+  const c = ctx
+  const len = Math.floor(c.sampleRate * 1.5)
+  const buf = c.createBuffer(1, len, c.sampleRate)
+  const d = buf.getChannelData(0)
+  for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1
+  const src = c.createBufferSource()
+  src.buffer = buf
+  src.loop = true
+  const f = c.createBiquadFilter()
+  f.type = 'lowpass'
+  f.frequency.value = 700
+  const g = c.createGain()
+  const now = c.currentTime
+  g.gain.setValueAtTime(0.0001, now)
+  g.gain.exponentialRampToValueAtTime(0.22, now + 0.35)
+  src.connect(f).connect(g).connect(c.destination)
+  src.start()
+  return () => {
+    const t = c.currentTime
+    g.gain.cancelScheduledValues(t)
+    g.gain.setValueAtTime(Math.max(g.gain.value, 0.0001), t)
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.15)
+    src.stop(t + 0.2)
+  }
+}
+
 export const sfx = {
   pop: () => play([{ f: 520, t: 0, d: 0.12, slide: 900, type: 'triangle' }]),
   // ketukan kado: nada naik tiap level supaya terasa "makin tegang"

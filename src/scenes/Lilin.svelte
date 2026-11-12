@@ -3,7 +3,7 @@
   import { fade, scale } from 'svelte/transition'
   import gsap from 'gsap'
   import { game } from '../lib/state.svelte'
-  import { sfx, duckMusic } from '../lib/audio'
+  import { sfx, duckMusic, windSound } from '../lib/audio'
   import { burst, vibrate } from '../lib/fx'
   import { listenForBlow, type BlowListener } from '../lib/mic'
   import Cake from '../components/Cake.svelte'
@@ -106,8 +106,67 @@
     }
   }
 
+  // ---- Tiup manual: tahan tombol ±1,6 detik. Api miring & mengecil sesuai lamanya ditahan,
+  //      kalau dilepas terlalu cepat apinya pulih lagi (seperti tiupan yang kurang kuat).
+  const HOLD_MS = 1600
+  let holdP = $state(0)
+  let holdHint = $state('')
+  let holdingBtn = false
+  let holdRaf = 0
+  let stopWind: (() => void) | null = null
+
+  // angin dari mic (level suara) atau dari tombol tahan, mana yang lebih besar
+  const micWind = $derived(micFailed ? 0 : Math.max(0, Math.min(1, (level - 0.12) * 2)))
+  const wind = $derived(phase === 'listening' ? Math.max(holdP, micWind) : 0)
+
+  function holdStart(e?: PointerEvent) {
+    if (phase !== 'listening' || holdingBtn) return
+    if (e) (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId)
+    holdingBtn = true
+    holdHint = ''
+    stopWind = windSound()
+    vibrate(20)
+    runHold()
+  }
+
+  function holdEnd() {
+    if (!holdingBtn) return
+    holdingBtn = false
+    stopWind?.()
+    stopWind = null
+    if (phase === 'listening' && holdP > 0.05 && holdP < 1) holdHint = 'Kurang panjang tiupnya… tahan sampai padam!'
+  }
+
+  function runHold() {
+    cancelAnimationFrame(holdRaf)
+    let last = performance.now()
+    const step = (t: number) => {
+      const dt = t - last
+      last = t
+      holdP = holdingBtn ? Math.min(1, holdP + dt / HOLD_MS) : Math.max(0, holdP - dt / 500)
+      if (holdP >= 1) {
+        holdingBtn = false
+        stopWind?.()
+        stopWind = null
+        blowOut()
+        return
+      }
+      if (holdingBtn || holdP > 0) holdRaf = requestAnimationFrame(step)
+    }
+    holdRaf = requestAnimationFrame(step)
+  }
+
+  function holdKey(e: KeyboardEvent) {
+    if ((e.key === ' ' || e.key === 'Enter') && !e.repeat) {
+      e.preventDefault()
+      holdStart()
+    }
+  }
+
   function blowOut() {
     if (phase === 'blown' || phase === 'wish') return
+    cancelAnimationFrame(holdRaf)
+    holdP = 0
     listener?.stop()
     listener = null
     phase = 'blown'
@@ -129,6 +188,8 @@
   }
 
   onDestroy(() => {
+    cancelAnimationFrame(holdRaf)
+    stopWind?.()
     listener?.stop()
     duckMusic(false)
   })
@@ -146,8 +207,13 @@
       <h1 class="hand">Siap ditiup!</h1>
       <p>Matiin lampunya dulu ya…</p>
     {:else if phase === 'listening'}
-      <h1 class="hand light">Tiup ke mic HP-mu</h1>
-      <p class="light">Yang kenceng, kayak niup lilin beneran.</p>
+      {#if micFailed}
+        <h1 class="hand light">Tahan buat niup</h1>
+        <p class="light">Tarik napas… terus tahan tombolnya sampai lilinnya padam.</p>
+      {:else}
+        <h1 class="hand light">Tiup ke mic HP-mu</h1>
+        <p class="light">Yang kenceng, kayak niup lilin beneran.</p>
+      {/if}
     {/if}
   </div>
 
@@ -156,16 +222,26 @@
     <div class="cake" bind:this={cakeBox} onclick={tapCake}>
       <Cake colors={game.cake} viewBox="0 -70 300 330" label="Kue dengan lilin angka 2 dan 1, {litCount} menyala">
         <svg overflow="visible">
+          <defs>
+            <radialGradient id="flameGlow">
+              <stop offset="0" stop-color="#FFF3C4" stop-opacity="0.95" />
+              <stop offset="0.45" stop-color="#F6D58E" stop-opacity="0.45" />
+              <stop offset="1" stop-color="#F6D58E" stop-opacity="0" />
+            </radialGradient>
+          </defs>
           <text x="130" y="110" text-anchor="middle" font-family="Nunito, sans-serif" font-weight="900" font-size="78" fill="#FBD3DE" stroke="#23408E" stroke-width="2.6" paint-order="stroke">2</text>
           <text x="180" y="110" text-anchor="middle" font-family="Nunito, sans-serif" font-weight="900" font-size="78" fill="#CFE6F7" stroke="#23408E" stroke-width="2.6" paint-order="stroke">1</text>
           {#each WICKS as w, i (i)}
             <path d="M{w[0]} 54 L{w[0]} 40" stroke="#23408E" stroke-width="2.2" />
             {#if lit[i]}
               <g transform="translate({w[0]} 0)">
-                <circle cx="0" cy="18" r="32" fill="#FFF0B3" fill-opacity="0.75" stroke="none" />
-                <g class="flame">
-                  <path d="M0 -6 C12 10 14 22 8 32 C4 38 -4 38 -8 32 C-14 22 -12 10 0 -6 Z" fill="#F6D58E" stroke="#23408E" stroke-width="2.4" />
-                  <path d="M0 12 C6 20 6 28 3 32 C1 35 -1 35 -3 32 C-6 28 -6 20 0 12 Z" fill="#F28AA5" stroke="none" />
+                <circle cx="0" cy="18" r={40 - wind * 16} fill="url(#flameGlow)" stroke="none" opacity={1 - wind * 0.5} />
+                <!-- angin: api miring ke samping, memendek, dan bergetar makin cepat -->
+                <g transform="translate({-wind * 5} 36) rotate({-wind * 55 - (i ? wind * 8 : 0)}) scale({1 - wind * 0.3} {1 - wind * 0.55}) translate(0 -36)" opacity={1 - wind * 0.35}>
+                  <g class="flame" class:gusty={wind > 0.2}>
+                    <path d="M0 -6 C12 10 14 22 8 32 C4 38 -4 38 -8 32 C-14 22 -12 10 0 -6 Z" fill="#F6D58E" stroke="#23408E" stroke-width="2.4" />
+                    <path d="M0 12 C6 20 6 28 3 32 C1 35 -1 35 -3 32 C-6 28 -6 20 0 12 Z" fill="#F28AA5" stroke="none" />
+                  </g>
                 </g>
               </g>
             {/if}
@@ -181,8 +257,27 @@
       <button class="btn pink wide" disabled={!allLit || phase !== 'ready'} onclick={startBlow}><Icon name="mic" /> Tiup lilin</button>
       <p class="note hand">{phase === 'ready' ? 'nanti HP-mu minta izin mikrofon, izinin ya' : 'nyalain semua dulu, baru boleh ditiup'}</p>
     {:else if phase === 'listening'}
-      <div class="meter" aria-hidden="true"><div style="width:{Math.min(100, level * 160)}%"></div></div>
-      <button class="btn ghost wide" onclick={blowOut}>{micFailed ? 'Mic-nya nggak bisa. Tiup manual' : 'Tiup manual (tanpa mic)'}</button>
+      {#if !micFailed}
+        <div class="meter" aria-hidden="true"><div style="width:{Math.min(100, level * 160)}%"></div></div>
+      {/if}
+      <button
+        class="btn ghost wide hold"
+        class:active={holdP > 0}
+        style="--p:{holdP}"
+        onpointerdown={holdStart}
+        onpointerup={holdEnd}
+        onpointercancel={holdEnd}
+        onkeydown={holdKey}
+        onkeyup={holdEnd}
+        onblur={holdEnd}
+        oncontextmenu={(e) => e.preventDefault()}
+        aria-label="Tahan untuk meniup lilin"
+      >
+        <span class="fill" aria-hidden="true"></span>
+        <span class="lbl">{holdP > 0.02 ? 'Fuuuuuh…' : micFailed ? 'Tahan untuk niup' : 'Atau tahan untuk niup manual'}</span>
+      </button>
+      <!-- ruang petunjuk selalu ada supaya tombol tidak bergeser saat petunjuk muncul -->
+      <p class="note hand light hint-slot" aria-live="polite">{holdHint}</p>
     {/if}
   </div>
 
@@ -292,6 +387,33 @@
     font-weight: 500;
     color: var(--muted-2);
     text-align: center;
+  }
+  .hint-slot {
+    min-height: 52px;
+  }
+  .flame.gusty {
+    animation-duration: 0.14s;
+  }
+  .hold {
+    position: relative;
+    overflow: hidden;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    min-height: 60px;
+  }
+  .hold .fill {
+    position: absolute;
+    inset: 0;
+    width: calc(var(--p) * 100%);
+    background: var(--butter);
+  }
+  .hold .lbl {
+    position: relative;
+  }
+  .hold.active {
+    transform: scale(0.97);
   }
   .meter {
     width: 100%;
