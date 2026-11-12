@@ -15,7 +15,7 @@ export const config = {
   kenalSejak: null as string | null,
 
   // Nomor WhatsApp kamu, format internasional tanpa + atau 0 di depan. Contoh: '6281234567890'
-  nomorWhatsApp: "629518008735",
+  nomorWhatsApp: "6289518008735",
   pesanBalasan: "Makasih Giftnya Fariddd!! 😭🎂",
 
   musik: "/audio/lagu.mp3",
