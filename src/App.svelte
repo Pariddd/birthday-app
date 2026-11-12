@@ -18,6 +18,7 @@
   import Memory from './scenes/Memory.svelte'
   import Tebak from './scenes/Tebak.svelte'
   import Lari from './scenes/Lari.svelte'
+  import Buket from './scenes/Buket.svelte'
 
   const VIEWS = {
     kunci: Kunci,
@@ -26,6 +27,7 @@
     warnai: Warnai,
     sparkler: Sparkler,
     lilin: Lilin,
+    buket: Buket,
     surat: Surat,
     arcade: Arcade,
     claw: Claw,

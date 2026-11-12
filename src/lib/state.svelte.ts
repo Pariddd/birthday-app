@@ -7,6 +7,7 @@ export const SCENES = [
   { id: 'warnai', judul: 'Warnai kue' },
   { id: 'sparkler', judul: 'Tulis umur' },
   { id: 'lilin', judul: 'Tiup lilin' },
+  { id: 'buket', judul: 'Buket Thumbelina' },
   { id: 'surat', judul: 'Surat' },
   { id: 'arcade', judul: 'Arcade' },
   { id: 'claw', judul: 'Claw machine' },
