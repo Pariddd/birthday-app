@@ -15,8 +15,6 @@
 
   // Ruang Kita
   let akun = $state(false)
-  const kapsulBuka = Date.UTC(config.lahir.tahun + 22, config.lahir.bulan - 1, config.lahir.tanggal) - 7 * 3600_000
-  const hariKapsul = Math.ceil((kapsulBuka - Date.now()) / 86_400_000)
   onMount(() => {
     void refreshUnread()
     const vis = () => !document.hidden && refreshUnread()
@@ -89,7 +87,7 @@
       </button>
       <button class="card" style="background:#ECE4FF" onclick={() => game.go('kapsul')}>
         <svg aria-hidden="true" viewBox="0 0 24 24" fill="#E8F4FF" stroke="#23408E" stroke-width="1.8" stroke-linejoin="round"><rect x="8" y="2" width="8" height="3" rx="1" fill="#C3B1F0" /><path d="M8.5 5 C5 7 4.5 10 4.5 13 V19 a2.5 2.5 0 0 0 2.5 2.5 H17 a2.5 2.5 0 0 0 2.5-2.5 V13 C19.5 10 19 7 15.5 5 Z" /><path d="M8 13 l4 3 l4 -3" fill="none" /></svg>
-        <b>Kapsul Waktu</b><span>{hariKapsul > 0 ? `dibuka ${hariKapsul} hari lagi` : 'sudah bisa dibuka!'}</span>
+        <b>Kapsul Waktu</b><span>surat buat dibuka nanti</span>
       </button>
     </div>
   </div>

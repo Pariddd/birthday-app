@@ -2,7 +2,7 @@
 
 Website kejutan ulang tahun interaktif: kunci tanggal lahir, kado, fakta umur, warnai kue, tulis umur dengan sparkler, tiup lilin lewat mikrofon, surat, lalu arcade bonus (claw machine, album, photobooth, memory match, tebak foto).
 
-Setelah ultah: **Ruang Kita** (dua arah Dilla ⇄ Farid) — Kotak Surat, Album Kenangan bersama, Kapsul Waktu ultah ke-22, Tantang Farid di Lari Cupcake, progres tersimpan di cloud, dan notifikasi Web Push.
+Setelah ultah: **Ruang Kita** (dua arah Dilla ⇄ Farid) — Kotak Surat, Album Kenangan bersama, Kapsul Waktu (waktu buka dipilih sendiri), Tantang Farid di Lari Cupcake, progres tersimpan di cloud, dan notifikasi Web Push.
 
 **Stack:** Vite + Svelte 5 + TypeScript, GSAP, canvas-confetti, @fontsource. Server: Vercel Functions (`api/`), Upstash Redis (data), Vercel Blob privat (foto album), Web Push (VAPID).
 
@@ -72,7 +72,7 @@ Semua langkah di dashboard project Vercel kamu. Lakukan **sebelum** Dilla membuk
    | `VAPID_PUBLIC_KEY` | dari langkah 3 |
    | `VAPID_PRIVATE_KEY` | dari langkah 3 (**rahasia**) |
    | `VAPID_SUBJECT` | `mailto:emailkamu@gmail.com` |
-   | `CRON_SECRET` | string acak ≥ 16 karakter (dipakai ucapan ultah otomatis tiap 13 Nov 00:00 WIB) |
+   | `CRON_SECRET` | string acak ≥ 16 karakter (cron harian 00:05 WIB: ucapan ultah + kabar kapsul yang terbuka hari ini) |
 
 5. **Redeploy** (Deployments → ⋯ → Redeploy).
 6. Di HP-mu: buka website → Arcade → **Ruang Kita** → *Aku Farid* → masuk → nyalakan notifikasi.
@@ -84,7 +84,8 @@ Semua langkah di dashboard project Vercel kamu. Lakukan **sebelum** Dilla membuk
 
 - Surat, album, kapsul, dan skor hanya bisa diakses dengan token login (PIN Dilla / kata sandi Farid). Foto album tersimpan **private** dan hanya disajikan lewat `/api/foto` dengan token per foto.
 - PIN di-hash (scrypt), salah 10× berturut-turut → login PIN terkunci 1 jam + kamu dapat notifikasi. PIN yang gampang ditebak (tanggal lahir, 1234, 0000) ditolak.
-- Kapsul waktu dikunci di **server**: isi tulisan pihak lain tidak pernah dikirim ke browser sebelum 13 Nov 2027 00:00 WIB.
+- Kapsul waktu dikunci di **server**: isi surat tidak pernah dikirim ke penerima sebelum waktu buka yang dipilih penulisnya (1 menit s.d. 10 tahun ke depan). Penulis masih bisa mengubah/menghapus sebelum terbuka; setelah terbuka, kapsul tersegel permanen.
+- Notifikasi kapsul: saat dititipkan (berisi tanggal bukanya), lalu oleh cron harian 00:05 WIB untuk kapsul yang terbuka hari itu. Cron paket Hobby hanya sekali sehari, jadi notifikasi tidak tepat di menit bukanya.
 - Celah yang tersisa: siapa pun yang memegang link bisa *membuat PIN duluan* sebelum Dilla. Karena itu kamu dapat notifikasi saat PIN dibuat; kalau bukan Dilla, buka **Ruang Kita → nama kamu → Reset PIN Dilla**.
 - Kuota gratis: Upstash 500 ribu perintah/bulan, Blob 1 GB. Album dibatasi 400 foto (dikompres ±300–500 KB di HP sebelum upload).
 
