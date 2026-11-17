@@ -1,0 +1,17 @@
+{
+  "name": "Untuk Dilla",
+  "short_name": "Untuk Dilla",
+  "description": "Ruang kecil buat surat, album kenangan, dan kapsul waktu.",
+  "lang": "id",
+  "start_url": "/?buka=arcade",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FBF8F1",
+  "theme_color": "#FBF8F1",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

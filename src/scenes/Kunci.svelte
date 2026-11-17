@@ -37,7 +37,7 @@
         .timeline({
           onComplete: () => {
             game.unlocked = true
-            game.go('kado')
+            game.afterUnlock()
           },
         })
         .to(seal, { rotate: -25, scale: 1.25, transformOrigin: '120px 114px', duration: 0.3, ease: 'back.out(3)' })

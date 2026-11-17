@@ -16,7 +16,14 @@ export const SCENES = [
   { id: 'memory', judul: 'Memory match' },
   { id: 'tebak', judul: 'Tebak foto' },
   { id: 'lari', judul: 'Lari Cupcake' },
+  // Ruang Kita (butuh server): dua arah Dilla ⇄ Parid
+  { id: 'kotak', judul: 'Kotak Surat' },
+  { id: 'kenangan', judul: 'Album Kenangan' },
+  { id: 'kapsul', judul: 'Kapsul Waktu' },
 ] as const
+
+/** Scene "Ruang Kita" — tidak ikut alur ulang tahun (next() berhenti di Lari). */
+export const RUANG: readonly SceneId[] = ['kotak', 'kenangan', 'kapsul']
 
 export type SceneId = (typeof SCENES)[number]['id']
 export type CakeArea = 'alas' | 'krim' | 'atas' | 'bawah' | 'stroberi'
@@ -24,7 +31,8 @@ export type CakeColors = Partial<Record<CakeArea, string>>
 
 const KEY = 'ulangtahun-dilla-v1'
 
-interface Saved {
+export interface Saved {
+  t: number
   scene: SceneId
   unlocked: boolean
   finished: boolean
@@ -61,6 +69,12 @@ class Game {
   muted = $state(false)
   toast = $state<{ text: string; id: number } | null>(null)
   menuOpen = $state(false)
+  /** Waktu simpan terakhir (ms) — dipakai saat menggabung progres dengan cloud. */
+  t = 0
+  /** Dipasang oleh lib/ruang saat Dilla login: kirim progres ke cloud setelah tiap simpan. */
+  afterSave: (() => void) | null = null
+  /** Tujuan deep link (?buka=…) yang menunggu kunci tanggal lahir dibuka dulu. */
+  pendingBuka: SceneId | null = null
 
   constructor() {
     const s = load()
@@ -77,10 +91,12 @@ class Game {
     this.doaGame = !!s.doaGame
     this.secrets = Array.isArray(s.secrets) ? s.secrets : []
     this.muted = !!s.muted
+    this.t = typeof s.t === 'number' ? s.t : 0
   }
 
-  save() {
-    const data: Saved = {
+  snapshot(): Saved {
+    return {
+      t: this.t,
       scene: this.scene,
       unlocked: this.unlocked,
       finished: this.finished,
@@ -93,11 +109,27 @@ class Game {
       secrets: $state.snapshot(this.secrets),
       muted: this.muted,
     }
+  }
+
+  save() {
+    this.t = Date.now()
     try {
-      localStorage.setItem(KEY, JSON.stringify(data))
+      localStorage.setItem(KEY, JSON.stringify(this.snapshot()))
     } catch {
       /* private mode: progres tidak tersimpan, website tetap jalan */
     }
+    this.afterSave?.()
+  }
+
+  /** Setelah kunci tanggal lahir: lanjut ke tujuan deep link kalau ada, kalau tidak ke kado. */
+  afterUnlock() {
+    const to = this.pendingBuka
+    this.pendingBuka = null
+    if (to) {
+      // Dibuka dari notifikasi / app di layar utama: alur ultah dianggap sudah pernah dilewati.
+      this.finished = true
+      this.go(to)
+    } else this.go('kado')
   }
 
   go(id: SceneId) {
@@ -108,7 +140,8 @@ class Game {
 
   next() {
     const i = SCENES.findIndex((s) => s.id === this.scene)
-    if (i < SCENES.length - 1) this.go(SCENES[i + 1].id)
+    const n = SCENES[i + 1]
+    if (n && !RUANG.includes(n.id)) this.go(n.id)
   }
 
   findSecret(i: number) {

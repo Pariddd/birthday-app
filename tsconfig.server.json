@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "target": "es2023",
+    "lib": ["ES2023"],
+    "types": ["node"],
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "strict": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "verbatimModuleSyntax": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true
+  },
+  "include": ["api/**/*.ts", "server/**/*.ts"]
+}

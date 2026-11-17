@@ -2,6 +2,7 @@
   type Name =
     | 'back' | 'next' | 'sound' | 'mute' | 'star' | 'lock' | 'unlock' | 'mic' | 'chat' | 'joystick'
     | 'menu' | 'flip' | 'camera' | 'switch' | 'info' | 'close' | 'eye' | 'check' | 'coin' | 'download' | 'left' | 'right'
+    | 'send' | 'heart' | 'trash' | 'plus' | 'bell' | 'bell-off' | 'user' | 'mail' | 'image' | 'refresh'
   let { name, size = 20, color = 'currentColor', stroke = 2.4 }: { name: Name; size?: number; color?: string; stroke?: number } = $props()
 </script>
 
@@ -28,5 +29,15 @@
   {:else if name === 'check'}<path d="M5 12l5 5 9-10" />
   {:else if name === 'download'}<path d="M12 4v11M7 10l5 5 5-5M5 20h14" />
   {:else if name === 'coin'}<circle cx="12" cy="12" r="9" fill="#F6D58E" /><path d="M12 7v10M9.5 9.5h4a1.5 1.5 0 0 1 0 3h-3a1.5 1.5 0 0 0 0 3h4" />
+  {:else if name === 'send'}<path d="M4 12l16-8-6 16-3-7z" /><path d="M11 13l9-9" />
+  {:else if name === 'heart'}<path d="M12 20s-7.5-4.6-7.5-10A4.3 4.3 0 0 1 12 7.4 4.3 4.3 0 0 1 19.5 10c0 5.4-7.5 10-7.5 10z" />
+  {:else if name === 'trash'}<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" /><path d="M10 11v6M14 11v6" />
+  {:else if name === 'plus'}<path d="M12 5v14M5 12h14" />
+  {:else if name === 'bell'}<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z" /><path d="M10 20a2 2 0 0 0 4 0" />
+  {:else if name === 'bell-off'}<path d="M6 16V11a6 6 0 0 1 9.5-4.9M18 11v5l2 2H8" /><path d="M10 20a2 2 0 0 0 4 0M3 3l18 18" />
+  {:else if name === 'user'}<circle cx="12" cy="8" r="4" /><path d="M4 21c1-4.5 4.3-7 8-7s7 2.5 8 7" />
+  {:else if name === 'mail'}<rect x="3" y="5" width="18" height="14" rx="2" /><path d="M3 7l9 6 9-6" />
+  {:else if name === 'image'}<rect x="3" y="4" width="18" height="16" rx="2" /><path d="M3 16l5-5 4 4 3-3 6 6" /><circle cx="15.5" cy="9" r="1.6" />
+  {:else if name === 'refresh'}<path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7" />
   {/if}
 </svg>

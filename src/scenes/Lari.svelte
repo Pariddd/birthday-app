@@ -8,6 +8,38 @@
   import { SKOR_DOA_GAME } from '../doa'
   import ArcadeHeader from '../components/ArcadeHeader.svelte'
   import Icon from '../components/Icon.svelte'
+  import { config } from '../config'
+  import { sesi, api } from '../lib/ruang.svelte'
+
+  // Tantang Parid: rekor dua orang disimpan di server (kalau sudah masuk Ruang Kita).
+  type Board = Record<'dilla' | 'parid', { best: number }>
+  let lawanBest = $state<number | null>(null)
+  let myCloud = 0
+  async function ambilBoard() {
+    if (!sesi.role) return
+    try {
+      const b = await api<Board>('skor')
+      const me = sesi.role
+      lawanBest = b[me === 'dilla' ? 'parid' : 'dilla'].best
+      myCloud = b[me].best
+      // Rekor lokal yang lebih tinggi (mis. dimainkan sebelum login) ikut dikirim.
+      if (game.best > myCloud) void kirimSkor(game.best)
+    } catch {
+      /* offline: main tetap jalan */
+    }
+  }
+  async function kirimSkor(s: number) {
+    if (!sesi.role || s <= myCloud) return
+    try {
+      const r = await api<Board & { nyalip?: boolean }>('skor', { body: { skor: s } })
+      myCloud = Math.max(myCloud, s)
+      const me = sesi.role
+      lawanBest = r[me === 'dilla' ? 'parid' : 'dilla'].best
+      if (r.nyalip && result) result = { ...result, nyalip: true }
+    } catch {
+      /* abaikan */
+    }
+  }
 
   const PESAN: Record<Cause, string[]> = {
     brokoli: ['Kalah sama brokoli? Seriously?', 'Brokolinya menang lagi.', 'Sayur memang musuh bersama.'],
@@ -25,7 +57,7 @@
   let phase = $state<'ready' | 'run' | 'dead' | 'paused'>('ready')
   let score = $state(0)
   let candles = $state(0)
-  let result = $state<{ score: number; candles: number; msg: string; record: boolean; coins: number; prevBest: number } | null>(null)
+  let result = $state<{ score: number; candles: number; msg: string; record: boolean; coins: number; prevBest: number; nyalip?: boolean } | null>(null)
   let doaJustUnlocked = $state(false)
 
   function tier(s: number) {
@@ -49,6 +81,7 @@
     const list = PESAN[cause]
     setTimeout(() => {
       result = { score: s, candles: c, msg: list[(Math.random() * list.length) | 0], record, coins, prevBest }
+      void kirimSkor(s)
       if (record) {
         sfx.tada()
         const r = screen.getBoundingClientRect()
@@ -126,6 +159,7 @@
     const ro = new ResizeObserver(() => runner?.resize(screen.clientWidth, screen.clientHeight))
     ro.observe(screen)
     runner.resize(screen.clientWidth, screen.clientHeight)
+    void ambilBoard()
     document.addEventListener('visibilitychange', onVisibility)
     // Uji otomatis: akses engine dari konsol hanya saat `npm run dev`
     if (import.meta.env.DEV) (window as unknown as { __runner: Runner }).__runner = runner
@@ -145,6 +179,9 @@
   <div class="hud" aria-live="off">
     <div class="score"><span>skor</span><b>{score.toLocaleString('id-ID')}</b></div>
     <div class="pill"><Icon name="star" size={14} stroke={1.6} /> rekor {game.best.toLocaleString('id-ID')}</div>
+    {#if lawanBest !== null}
+      <div class="pill rival" class:kalah={game.best < lawanBest}>{sesi.lawan} {lawanBest.toLocaleString('id-ID')}</div>
+    {/if}
     <div class="pill candle-pill">
       <svg aria-hidden="true" width="12" height="18" viewBox="0 0 12 26" fill="#FBD3DE" stroke="#23408E" stroke-width="2"><rect x="2" y="8" width="8" height="17" /><path d="M6 1 C10 6 9 8 6 8 C3 8 2 6 6 1Z" fill="#F6D58E" /></svg>
       {candles}
@@ -175,7 +212,7 @@
       </div>
     {:else if phase === 'dead' && result}
       <div class="card over" role="dialog" aria-labelledby="over-t" transition:scale={{ start: 0.85, duration: 250 }}>
-        {#if result.record}<span class="badge">REKOR BARU!</span>{/if}
+        {#if result.nyalip}<span class="badge nyalip">NYALIP {sesi.lawan.toUpperCase()}!</span>{:else if result.record}<span class="badge">REKOR BARU!</span>{/if}
         <p id="over-t" class="hand msg">{result.msg}</p>
         <p class="final">{result.score.toLocaleString('id-ID')}</p>
         <p class="small">{tier(result.score)}</p>
@@ -184,6 +221,13 @@
           {#if result.coins > 0}<span class="coin">+{result.coins} koin</span>{/if}
           {#if !result.record && result.prevBest > 0}<span>rekor <b>{result.prevBest.toLocaleString('id-ID')}</b></span>{/if}
         </div>
+        {#if lawanBest !== null && !result.nyalip}
+          <p class="rival-line">
+            {Math.max(game.best, result.score) > lawanBest
+              ? `Kamu masih di atas ${sesi.lawan} 😎`
+              : `Kurang ${(lawanBest - result.score + 1).toLocaleString('id-ID')} lagi buat nyalip ${sesi.lawan}`}
+          </p>
+        {/if}
         {#if doaJustUnlocked}<p class="unlock">Kartu doa rahasia terbuka! Cek di album.</p>{/if}
         <div class="row">
           <button class="btn ghost" onclick={() => game.go('arcade')}>Lobi</button>
@@ -198,6 +242,9 @@
       Kartu doa rahasia sudah terbuka. Sekarang tinggal kejar rekor!
     {:else}
       Tembus skor <b>{SKOR_DOA_GAME}</b> untuk buka kartu doa rahasia · tiap {KOIN_PER_LILIN} lilin = 1 koin
+    {/if}
+    {#if !sesi.role}
+      <br /><button class="tantang" onclick={() => game.go('kotak')}>Masuk Ruang Kita buat adu rekor sama {config.pengirim} →</button>
     {/if}
   </p>
 </section>
@@ -359,6 +406,32 @@
   }
   .row .grow {
     flex: 1.5;
+  }
+  .rival {
+    background: #e3f0ff;
+  }
+  .rival.kalah {
+    background: #ffe3ea;
+  }
+  .badge.nyalip {
+    background: var(--pink-dark);
+    color: #fff;
+  }
+  .rival-line {
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--ink);
+  }
+  .tantang {
+    margin-top: 6px;
+    min-height: 36px;
+    border: none;
+    background: none;
+    color: var(--pink-dark);
+    font-weight: 800;
+    font-size: 13px;
+    text-decoration: underline;
+    cursor: pointer;
   }
   .foot {
     margin-top: 14px;

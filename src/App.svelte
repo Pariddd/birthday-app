@@ -19,6 +19,9 @@
   import Tebak from './scenes/Tebak.svelte'
   import Lari from './scenes/Lari.svelte'
   import Buket from './scenes/Buket.svelte'
+  import Kotak from './scenes/Kotak.svelte'
+  import Kenangan from './scenes/Kenangan.svelte'
+  import Kapsul from './scenes/Kapsul.svelte'
 
   const VIEWS = {
     kunci: Kunci,
@@ -36,6 +39,9 @@
     memory: Memory,
     tebak: Tebak,
     lari: Lari,
+    kotak: Kotak,
+    kenangan: Kenangan,
+    kapsul: Kapsul,
   }
 
   // Mode uji (hanya saat `npm run dev`): ?scene=lilin langsung lompat ke scene tsb.
@@ -55,7 +61,7 @@
     if (resumed) startMusic()
   }
 
-  const isArcade = $derived(['arcade', 'claw', 'album', 'photobooth', 'memory', 'tebak', 'lari'].includes(game.scene))
+  const isArcade = $derived(['arcade', 'claw', 'album', 'photobooth', 'memory', 'tebak', 'lari', 'kotak', 'kenangan', 'kapsul'].includes(game.scene))
   const showChrome = $derived(game.scene !== 'kunci')
   const Current = $derived(VIEWS[game.scene])
   const dur = reducedMotion ? 0 : 450
@@ -102,6 +108,7 @@
       </div>
       <ol>
         {#each SCENES.slice(1) as s, i (s.id)}
+          {#if s.id === 'kotak'}<li class="group hand">Ruang Kita</li>{/if}
           <li>
             <button class="item" class:active={game.scene === s.id} onclick={() => game.go(s.id)}>
               <span class="num">{i + 1}</span>{s.judul}
@@ -213,6 +220,11 @@
   .item.active {
     border-color: var(--ink);
     background: #fff;
+  }
+  .group {
+    margin: 10px 0 0 4px;
+    font-size: 26px;
+    color: var(--pink-dark);
   }
   .num {
     width: 28px;

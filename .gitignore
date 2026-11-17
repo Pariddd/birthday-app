@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# data lokal API (npm run dev) & build Vercel
+.data
+.vercel

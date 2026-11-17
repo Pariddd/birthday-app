@@ -2,7 +2,9 @@
 
 Website kejutan ulang tahun interaktif: kunci tanggal lahir, kado, fakta umur, warnai kue, tulis umur dengan sparkler, tiup lilin lewat mikrofon, surat, lalu arcade bonus (claw machine, album, photobooth, memory match, tebak foto).
 
-**Stack:** Vite + Svelte 5 + TypeScript, GSAP (animasi), canvas-confetti. Font di-host sendiri (@fontsource), tanpa backend.
+Setelah ultah: **Ruang Kita** (dua arah Dilla ⇄ Parid) — Kotak Surat, Album Kenangan bersama, Kapsul Waktu ultah ke-22, Tantang Parid di Lari Cupcake, progres tersimpan di cloud, dan notifikasi Web Push.
+
+**Stack:** Vite + Svelte 5 + TypeScript, GSAP, canvas-confetti, @fontsource. Server: Vercel Functions (`api/`), Upstash Redis (data), Vercel Blob privat (foto album), Web Push (VAPID).
 
 ## Menjalankan di laptop
 
@@ -15,6 +17,16 @@ Buka `http://localhost:5173`. Saat mode dev, kamu bisa lompat ke scene mana pun 
 `http://localhost:5173/?scene=lilin` (nama scene: `kunci, kado, umur, warnai, sparkler, lilin, surat, arcade, claw, album, photobooth, memory, tebak`).
 
 Untuk mengulang dari awal saat testing: buka DevTools → Application → Local Storage → hapus `ulangtahun-dilla-v1`.
+
+**Ruang Kita saat dev** jalan tanpa akun apa pun: data disimpan di folder `.data/` (otomatis, sudah di-.gitignore). Kata sandi mode Parid saat dev: `parid-dev`. Untuk mencoba notifikasi saat dev, buat `.env.local`:
+
+```
+VAPID_PUBLIC_KEY=...
+VAPID_PRIVATE_KEY=...
+VAPID_SUBJECT=mailto:emailkamu@gmail.com
+```
+
+(kunci dibuat dengan `npx web-push generate-vapid-keys`). Mulai ulang Ruang Kita saat dev = hapus folder `.data/`.
 
 ## Yang perlu kamu ganti
 
@@ -44,12 +56,44 @@ Semua isi ada di **`src/config.ts`**:
 
 Tips: pakai nama project yang tidak membocorkan isi, misalnya `surat-untuk-dilla`.
 
+## Menyalakan Ruang Kita di Vercel (gratis, tanpa kartu kredit)
+
+Semua langkah di dashboard project Vercel kamu. Lakukan **sebelum** Dilla membuka Ruang Kita.
+
+1. **Database — Upstash Redis:** tab **Storage → Create Database → Upstash (Redis)** → paket **Free** → hubungkan ke project ini. Variabel `KV_REST_API_URL` & `KV_REST_API_TOKEN` (atau `UPSTASH_REDIS_REST_*`) otomatis ditambahkan.
+2. **Foto album — Vercel Blob:** **Storage → Create → Blob** → pilih akses **Private** → hubungkan ke project. (`BLOB_READ_WRITE_TOKEN` otomatis ditambahkan.)
+3. **Kunci notifikasi:** di laptop jalankan `npx web-push generate-vapid-keys`, lalu salin hasilnya.
+4. **Settings → Environment Variables**, tambahkan (Production):
+
+   | Nama | Isi |
+   |---|---|
+   | `APP_SECRET` | string acak ≥ 32 karakter (PowerShell: `[Convert]::ToBase64String((1..48 \| % {Get-Random -Max 256}))`, atau `openssl rand -base64 48`) |
+   | `ADMIN_PASSWORD` | kata sandi mode Parid (≥ 8 karakter, jangan sama dengan password lain) |
+   | `VAPID_PUBLIC_KEY` | dari langkah 3 |
+   | `VAPID_PRIVATE_KEY` | dari langkah 3 (**rahasia**) |
+   | `VAPID_SUBJECT` | `mailto:emailkamu@gmail.com` |
+   | `CRON_SECRET` | string acak ≥ 16 karakter (dipakai ucapan ultah otomatis tiap 13 Nov 00:00 WIB) |
+
+5. **Redeploy** (Deployments → ⋯ → Redeploy).
+6. Di HP-mu: buka website → Arcade → **Ruang Kita** → *Aku Parid* → masuk → nyalakan notifikasi.
+7. Kirim ke Dilla: "cek Arcade, ada Ruang Kita". Dia membuat PIN sendiri saat pertama masuk; kamu dapat notifikasi saat PIN dibuat.
+
+**iPhone:** notifikasi web hanya jalan kalau website dipasang ke layar utama (Safari → Bagikan → *Tambah ke Layar Utama*, iOS 16.4+). Panduannya muncul di tombol notifikasi.
+
+### Keamanan (yang perlu kamu tahu)
+
+- Surat, album, kapsul, dan skor hanya bisa diakses dengan token login (PIN Dilla / kata sandi Parid). Foto album tersimpan **private** dan hanya disajikan lewat `/api/foto` dengan token per foto.
+- PIN di-hash (scrypt), salah 10× berturut-turut → login PIN terkunci 1 jam + kamu dapat notifikasi. PIN yang gampang ditebak (tanggal lahir, 1234, 0000) ditolak.
+- Kapsul waktu dikunci di **server**: isi tulisan pihak lain tidak pernah dikirim ke browser sebelum 13 Nov 2027 00:00 WIB.
+- Celah yang tersisa: siapa pun yang memegang link bisa *membuat PIN duluan* sebelum Dilla. Karena itu kamu dapat notifikasi saat PIN dibuat; kalau bukan Dilla, buka **Ruang Kita → nama kamu → Reset PIN Dilla**.
+- Kuota gratis: Upstash 500 ribu perintah/bulan, Blob 1 GB. Album dibatasi 400 foto (dikompres ±300–500 KB di HP sebelum upload).
+
 ## Catatan kompatibilitas
 
 - **iPhone (Safari) & Android (Chrome)**: musik, mikrofon, dan kamera hanya dimulai setelah ada ketukan (aturan browser). Semuanya butuh HTTPS, dan Vercel sudah otomatis HTTPS.
 - **Mikrofon ditolak / tidak ada**: tombol *Tiup manual* selalu tersedia.
 - **Laptop**: tampil sebagai halaman buku di tengah layar. Seret korek & sparkler pakai mouse.
-- **Progres tersimpan** di perangkat (localStorage). Setelah surat selesai dibaca, tombol **Daftar isi** muncul untuk lompat ke scene mana pun.
+- **Progres tersimpan** di perangkat (localStorage), dan ikut tersimpan di cloud setelah Dilla masuk Ruang Kita. Setelah surat selesai dibaca, tombol **Daftar isi** muncul untuk lompat ke scene mana pun.
 - **Privasi**: photobooth memproses foto sepenuhnya di HP; tidak ada yang diunggah. Kunci tanggal lahir hanya gimmick (bisa dilihat dari kode), jadi jangan taruh informasi sensitif di website ini.
 
 ## Struktur
@@ -62,8 +106,12 @@ src/
   lib/audio.ts         ← musik + efek suara (Web Audio)
   lib/mic.ts           ← deteksi tiupan (RMS frekuensi rendah)
   lib/fx.ts            ← confetti, animasi garis doodle, long-press
-  components/          ← Cake, Prize, Photo, Icon, Toast, ArcadeHeader
-  scenes/              ← satu file per scene
+  lib/ruang.svelte.ts  ← login Ruang Kita, panggilan API, sinkron progres, Web Push
+  components/          ← Cake, Prize, Photo, Icon, Toast, ArcadeHeader, RuangGate, NotifToggle, AkunSheet
+  scenes/              ← satu file per scene (Kotak, Kenangan, Kapsul = Ruang Kita)
+api/                   ← Vercel Functions: auth, pesan, progres, skor, kapsul, album, foto, push
+server/                ← kode bersama server: kv (Redis/file), blob, auth (token+PIN), push, http
 public/
-  photos/  audio/  og.png  favicon.svg
+  photos/  audio/  og.png  favicon.svg  sw.js  manifest.webmanifest  icon-*.png
+vercel.json            ← cron ucapan ultah + header service worker
 ```

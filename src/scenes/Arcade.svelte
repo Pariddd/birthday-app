@@ -4,10 +4,25 @@
   import { sfx } from '../lib/audio'
   import ArcadeHeader from '../components/ArcadeHeader.svelte'
   import { KARTU_DOA } from '../doa'
+  import { onMount } from 'svelte'
+  import { sesi, refreshUnread } from '../lib/ruang.svelte'
+  import AkunSheet from '../components/AkunSheet.svelte'
+  import Icon from '../components/Icon.svelte'
 
   const sisa = $derived(config.foto.length - game.collected.length)
   const sisaDoa = $derived(KARTU_DOA.length - game.doa.length)
   const starFound = $derived(game.secrets.includes(2))
+
+  // Ruang Kita
+  let akun = $state(false)
+  const kapsulBuka = Date.UTC(config.lahir.tahun + 22, config.lahir.bulan - 1, config.lahir.tanggal) - 7 * 3600_000
+  const hariKapsul = Math.ceil((kapsulBuka - Date.now()) / 86_400_000)
+  onMount(() => {
+    void refreshUnread()
+    const vis = () => !document.hidden && refreshUnread()
+    document.addEventListener('visibilitychange', vis)
+    return () => document.removeEventListener('visibilitychange', vis)
+  })
 </script>
 
 <section class="scene arcade">
@@ -50,6 +65,35 @@
     </span>
   </button>
 
+  <div class="ruang">
+    <div class="ruang-head">
+      <h2 class="hand">Ruang Kita</h2>
+      {#if sesi.role}
+        <button class="chip who" onclick={() => (akun = true)}><Icon name="user" size={14} stroke={2} /> {sesi.role === 'parid' ? config.pengirim : config.nama}</button>
+      {:else}
+        <span class="chip"><Icon name="lock" size={14} stroke={2} /> pakai PIN</span>
+      {/if}
+    </div>
+    <button class="card mail" onclick={() => game.go('kotak')}>
+      <svg aria-hidden="true" viewBox="0 0 240 180" fill="none" stroke="#23408E" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"><path d="M22 40 L218 36 L222 160 L18 164 Z" fill="#FFFFFF" /><path d="M22 40 L120 110 L218 36" fill="#FBD3DE" /><circle cx="120" cy="110" r="26" fill="#E0557A" stroke-width="6" /></svg>
+      <span class="txt">
+        <b>Kotak Surat</b>
+        <span>{sesi.unread > 0 ? `${sesi.unread} surat baru dari ${sesi.lawan}!` : `Surat-suratan sama ${sesi.role ? sesi.lawan : config.pengirim}`}</span>
+      </span>
+      {#if sesi.unread > 0}<em class="badge" aria-label="{sesi.unread} belum dibaca">{sesi.unread > 9 ? '9+' : sesi.unread}</em>{/if}
+    </button>
+    <div class="grid two">
+      <button class="card" style="background:#E3F4EE" onclick={() => game.go('kenangan')}>
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="#FFFFFF" stroke="#23408E" stroke-width="1.8" stroke-linejoin="round"><rect x="6" y="3" width="14" height="14" rx="1.5" transform="rotate(8 13 10)" fill="#FFC9D9" /><rect x="3" y="6" width="14" height="14" rx="1.5" /><path d="M3 16l4-4 3 3 2-2 5 5" fill="none" /></svg>
+        <b>Album Kenangan</b><span>kamu & {config.pengirim} bisa upload</span>
+      </button>
+      <button class="card" style="background:#ECE4FF" onclick={() => game.go('kapsul')}>
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="#E8F4FF" stroke="#23408E" stroke-width="1.8" stroke-linejoin="round"><rect x="8" y="2" width="8" height="3" rx="1" fill="#C3B1F0" /><path d="M8.5 5 C5 7 4.5 10 4.5 13 V19 a2.5 2.5 0 0 0 2.5 2.5 H17 a2.5 2.5 0 0 0 2.5-2.5 V13 C19.5 10 19 7 15.5 5 Z" /><path d="M8 13 l4 3 l4 -3" fill="none" /></svg>
+        <b>Kapsul Waktu</b><span>{hariKapsul > 0 ? `dibuka ${hariKapsul} hari lagi` : 'sudah bisa dibuka!'}</span>
+      </button>
+    </div>
+  </div>
+
   <div class="grid">
     <button class="card" style="background:#FFF4CC" onclick={() => game.go('album')}>
       <svg aria-hidden="true" viewBox="0 0 24 24" fill="#FFFFFF" stroke="#23408E" stroke-width="1.8" stroke-linejoin="round"><path d="M4 4h12l4 4v12H4z" /><path d="M4 15l4-4 4 4 3-3 5 5" fill="none" /><circle cx="15" cy="9" r="1.6" fill="#F28AA5" /></svg>
@@ -87,6 +131,8 @@
   <p class="hand tagline">main sepuasnya, birthday girl</p>
   <div class="floor" aria-hidden="true"></div>
 </section>
+
+{#if akun}<AkunSheet onclose={() => (akun = false)} />{/if}
 
 <style>
   .scene.arcade {
@@ -243,6 +289,77 @@
     font-style: normal;
     letter-spacing: 1px;
     rotate: 4deg;
+  }
+  .ruang {
+    margin-top: 22px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px 12px 14px;
+    border: 2.5px dashed var(--ink);
+    border-radius: 22px 18px 24px 19px;
+    background: rgba(255, 255, 255, 0.55);
+  }
+  .ruang-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .ruang-head h2 {
+    font-size: 30px;
+    line-height: 1;
+    color: var(--pink-dark);
+  }
+  .who {
+    cursor: pointer;
+  }
+  .card.mail {
+    position: relative;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+    background: #ffe3ea;
+  }
+  .card.mail svg {
+    width: 56px;
+    height: 42px;
+    flex-shrink: 0;
+  }
+  .card.mail .txt {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .card.mail b {
+    font-size: 19px;
+  }
+  .badge {
+    position: absolute;
+    top: -10px;
+    right: -6px;
+    min-width: 28px;
+    height: 28px;
+    padding: 0 7px;
+    border: 2px solid var(--ink);
+    border-radius: 999px;
+    background: var(--pink-dark);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 900;
+    font-style: normal;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: bob 1.6s ease-in-out infinite;
+  }
+  @keyframes bob {
+    50% {
+      translate: 0 -3px;
+    }
+  }
+  .grid.two {
+    margin-top: 0;
   }
   .tagline {
     margin-top: 18px;

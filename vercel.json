@@ -1,0 +1,8 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "crons": [{ "path": "/api/kapsul?cron=1", "schedule": "0 17 12 11 *" }],
+  "headers": [
+    { "source": "/sw.js", "headers": [{ "key": "Cache-Control", "value": "no-cache" }, { "key": "Service-Worker-Allowed", "value": "/" }] },
+    { "source": "/api/(.*)", "headers": [{ "key": "X-Content-Type-Options", "value": "nosniff" }] }
+  ]
+}
