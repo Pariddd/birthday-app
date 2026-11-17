@@ -1,4 +1,4 @@
-// /api/kapsul — Kapsul Waktu: Dilla & Parid saling menulis, baru bisa dibaca saat ulang tahun ke-22.
+// /api/kapsul — Kapsul Waktu: Dilla & Farid saling menulis, baru bisa dibaca saat ulang tahun ke-22.
 // Kuncinya di SERVER: sebelum waktunya, isi tulisan pihak lain tidak pernah dikirim ke browser.
 import { kv } from '../server/kv.js'
 import { route, json, readJson, rateLimit, clampText, HttpError } from '../server/http.js'

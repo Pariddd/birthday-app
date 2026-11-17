@@ -1,8 +1,9 @@
-// /api/pesan — Kotak Surat dua arah (Dilla ⇄ Parid).
+// /api/pesan — Kotak Surat dua arah (Dilla ⇄ Farid).
 import { kv } from '../server/kv.js'
 import { route, json, readJson, rateLimit, clampText, HttpError } from '../server/http.js'
 import { requireRole, other, type Role } from '../server/auth.js'
 import { notify } from '../server/push.js'
+import { config } from '../src/config.js'
 
 const LIST = 'msg:list'
 const SEQ = 'msg:seq'
@@ -70,7 +71,7 @@ export default route({
 
     // Isi surat sengaja TIDAK ditaruh di notifikasi (bisa terbaca di layar kunci).
     await notify(other(me), {
-      title: me === 'dilla' ? 'Surat baru dari Dilla' : 'Ada surat baru dari Parid',
+      title: me === 'dilla' ? `Surat baru dari ${config.nama}` : `Ada surat baru dari ${config.pengirim}`,
       body: 'Buka Kotak Surat buat baca ya.',
       url: '/?buka=kotak',
       tag: 'pesan',

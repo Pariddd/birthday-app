@@ -129,8 +129,8 @@
           bind:value={draft}
           maxlength={MAX + 50}
           placeholder={me === 'dilla'
-            ? 'Tulis harapanmu buat setahun ke depan, atau pesan buat Parid. Kalian berdua baca bareng nanti.'
-            : 'Tulis sesuatu buat Dilla di umur 22: harapan, kenangan tahun ini, apa aja.'}
+            ? `Tulis harapanmu buat setahun ke depan, atau pesan buat ${lawan}. Kalian berdua baca bareng nanti.`
+            : `Tulis sesuatu buat ${lawan} di umur 22: harapan, kenangan tahun ini, apa aja.`}
         ></textarea>
         <div class="row">
           <span class="meta">

@@ -2,7 +2,7 @@
 
 Website kejutan ulang tahun interaktif: kunci tanggal lahir, kado, fakta umur, warnai kue, tulis umur dengan sparkler, tiup lilin lewat mikrofon, surat, lalu arcade bonus (claw machine, album, photobooth, memory match, tebak foto).
 
-Setelah ultah: **Ruang Kita** (dua arah Dilla ⇄ Parid) — Kotak Surat, Album Kenangan bersama, Kapsul Waktu ultah ke-22, Tantang Parid di Lari Cupcake, progres tersimpan di cloud, dan notifikasi Web Push.
+Setelah ultah: **Ruang Kita** (dua arah Dilla ⇄ Farid) — Kotak Surat, Album Kenangan bersama, Kapsul Waktu ultah ke-22, Tantang Farid di Lari Cupcake, progres tersimpan di cloud, dan notifikasi Web Push.
 
 **Stack:** Vite + Svelte 5 + TypeScript, GSAP, canvas-confetti, @fontsource. Server: Vercel Functions (`api/`), Upstash Redis (data), Vercel Blob privat (foto album), Web Push (VAPID).
 
@@ -18,7 +18,7 @@ Buka `http://localhost:5173`. Saat mode dev, kamu bisa lompat ke scene mana pun 
 
 Untuk mengulang dari awal saat testing: buka DevTools → Application → Local Storage → hapus `ulangtahun-dilla-v1`.
 
-**Ruang Kita saat dev** jalan tanpa akun apa pun: data disimpan di folder `.data/` (otomatis, sudah di-.gitignore). Kata sandi mode Parid saat dev: `parid-dev`. Untuk mencoba notifikasi saat dev, buat `.env.local`:
+**Ruang Kita saat dev** jalan tanpa akun apa pun: data disimpan di folder `.data/` (otomatis, sudah di-.gitignore). Kata sandi mode Farid saat dev: `farid-dev`. Untuk mencoba notifikasi saat dev, buat `.env.local`:
 
 ```
 VAPID_PUBLIC_KEY=...
@@ -68,21 +68,21 @@ Semua langkah di dashboard project Vercel kamu. Lakukan **sebelum** Dilla membuk
    | Nama | Isi |
    |---|---|
    | `APP_SECRET` | string acak ≥ 32 karakter (PowerShell: `[Convert]::ToBase64String((1..48 \| % {Get-Random -Max 256}))`, atau `openssl rand -base64 48`) |
-   | `ADMIN_PASSWORD` | kata sandi mode Parid (≥ 8 karakter, jangan sama dengan password lain) |
+   | `ADMIN_PASSWORD` | kata sandi mode Farid (≥ 8 karakter, jangan sama dengan password lain) |
    | `VAPID_PUBLIC_KEY` | dari langkah 3 |
    | `VAPID_PRIVATE_KEY` | dari langkah 3 (**rahasia**) |
    | `VAPID_SUBJECT` | `mailto:emailkamu@gmail.com` |
    | `CRON_SECRET` | string acak ≥ 16 karakter (dipakai ucapan ultah otomatis tiap 13 Nov 00:00 WIB) |
 
 5. **Redeploy** (Deployments → ⋯ → Redeploy).
-6. Di HP-mu: buka website → Arcade → **Ruang Kita** → *Aku Parid* → masuk → nyalakan notifikasi.
+6. Di HP-mu: buka website → Arcade → **Ruang Kita** → *Aku Farid* → masuk → nyalakan notifikasi.
 7. Kirim ke Dilla: "cek Arcade, ada Ruang Kita". Dia membuat PIN sendiri saat pertama masuk; kamu dapat notifikasi saat PIN dibuat.
 
 **iPhone:** notifikasi web hanya jalan kalau website dipasang ke layar utama (Safari → Bagikan → *Tambah ke Layar Utama*, iOS 16.4+). Panduannya muncul di tombol notifikasi.
 
 ### Keamanan (yang perlu kamu tahu)
 
-- Surat, album, kapsul, dan skor hanya bisa diakses dengan token login (PIN Dilla / kata sandi Parid). Foto album tersimpan **private** dan hanya disajikan lewat `/api/foto` dengan token per foto.
+- Surat, album, kapsul, dan skor hanya bisa diakses dengan token login (PIN Dilla / kata sandi Farid). Foto album tersimpan **private** dan hanya disajikan lewat `/api/foto` dengan token per foto.
 - PIN di-hash (scrypt), salah 10× berturut-turut → login PIN terkunci 1 jam + kamu dapat notifikasi. PIN yang gampang ditebak (tanggal lahir, 1234, 0000) ditolak.
 - Kapsul waktu dikunci di **server**: isi tulisan pihak lain tidak pernah dikirim ke browser sebelum 13 Nov 2027 00:00 WIB.
 - Celah yang tersisa: siapa pun yang memegang link bisa *membuat PIN duluan* sebelum Dilla. Karena itu kamu dapat notifikasi saat PIN dibuat; kalau bukan Dilla, buka **Ruang Kita → nama kamu → Reset PIN Dilla**.

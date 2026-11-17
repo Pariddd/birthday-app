@@ -6,7 +6,7 @@
 
 export const config = {
   nama: "Dilla",
-  pengirim: "Parid",
+  pengirim: "Farid",
 
   // Tanggal lahir (dipakai untuk kunci, hitung umur, dan lilin angka)
   lahir: { tahun: 2005, bulan: 11, tanggal: 13 },

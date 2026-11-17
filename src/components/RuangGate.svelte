@@ -60,7 +60,7 @@
       sfx.unlock()
       await sesi.login(r.token, r.role)
       if (r.role === 'dilla') game_say(mode === 'setup' ? 'PIN tersimpan. Jangan kasih tahu siapa-siapa ya!' : `Hai ${config.nama}!`)
-      else game_say('Mode Parid aktif.')
+      else game_say(`Mode ${config.pengirim} aktif.`)
       pin = pin2 = password = ''
     } catch (err) {
       const ae = err as ApiError

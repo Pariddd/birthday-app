@@ -1,4 +1,4 @@
-// /api/auth — status, buat PIN (Dilla), masuk PIN, masuk admin (Parid), ganti & reset PIN.
+// /api/auth — status, buat PIN (Dilla), masuk PIN, masuk admin (Farid), ganti & reset PIN.
 import { kv } from '../server/kv.js'
 import { route, json, readJson, rateLimit, HttpError } from '../server/http.js'
 import { issueToken, requireRole, revokeAll, hashPin, verifyPin, safeEqual, type Role } from '../server/auth.js'
@@ -76,7 +76,7 @@ export default route({
         if (!ok) throw new HttpError(409, 'PIN sudah pernah dibuat. Masuk pakai PIN-mu ya.', { code: 'exists' })
         await notify('parid', {
           title: 'Dilla sudah bikin PIN',
-          body: 'Ruang Kita sudah aktif. (Kalau ini bukan Dilla, reset PIN dari mode Parid.)',
+          body: `Ruang Kita sudah aktif. (Kalau ini bukan Dilla, reset PIN dari mode ${config.pengirim}.)`,
           tag: 'keamanan',
           url: '/?buka=kotak',
         })
@@ -97,7 +97,7 @@ export default route({
       case 'admin': {
         await rateLimit(req, 'auth', 20, 600)
         await ensureNotLocked('parid')
-        const pass = process.env.ADMIN_PASSWORD || (process.env.VERCEL ? '' : 'parid-dev')
+        const pass = process.env.ADMIN_PASSWORD || (process.env.VERCEL ? '' : 'farid-dev')
         if (pass.length < 8) throw new HttpError(503, 'ADMIN_PASSWORD belum diisi di Vercel (minimal 8 karakter).')
         if (typeof body.password !== 'string' || !safeEqual(body.password, pass)) return await failed('parid')
         await kv().del(failKey('parid'))

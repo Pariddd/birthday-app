@@ -1,8 +1,9 @@
-// /api/skor — "Tantang Parid": rekor Lari Cupcake Dilla vs Parid.
+// /api/skor — "Tantang Farid": rekor Lari Cupcake Dilla vs Farid.
 import { kv } from '../server/kv.js'
 import { route, json, readJson, rateLimit, HttpError } from '../server/http.js'
 import { requireRole, other } from '../server/auth.js'
 import { notify } from '../server/push.js'
+import { config } from '../src/config.js'
 
 const KEY = 'skor:lari'
 const fmt = (n: number) => n.toLocaleString('id-ID')
@@ -41,7 +42,7 @@ export default route({
     const nyalip = lawan.best > 0 && mine.best <= lawan.best && s > lawan.best
     if (nyalip) {
       await notify(other(me), {
-        title: me === 'dilla' ? 'Rekormu disalip Dilla! 🧁' : 'Parid ngerebut rekornya lagi 🧁',
+        title: me === 'dilla' ? `Rekormu disalip ${config.nama}! 🧁` : `${config.pengirim} ngerebut rekornya lagi 🧁`,
         body: `${fmt(s)} vs ${fmt(lawan.best)}. Berani balas?`,
         url: '/?buka=lari',
         tag: 'skor',

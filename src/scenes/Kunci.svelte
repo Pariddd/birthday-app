@@ -82,7 +82,7 @@
   </div>
 
   <div class="text">
-    <h1 class="hand">Ada surat buat kamu</h1>
+    <h1 class="hand">Gift untuk dilla</h1>
     <p>Tapi digembok dulu. Bukanya pakai tanggal &amp; bulan lahirmu.</p>
   </div>
 

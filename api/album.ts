@@ -1,10 +1,11 @@
-// /api/album — Album Kenangan bersama: Dilla & Parid sama-sama bisa upload, kasih ♥, dan hapus fotonya sendiri.
+// /api/album — Album Kenangan bersama: Dilla & Farid sama-sama bisa upload, kasih ♥, dan hapus fotonya sendiri.
 import { randomBytes } from 'node:crypto'
 import { kv } from '../server/kv.js'
 import { blob } from '../server/blob.js'
 import { route, json, readJson, rateLimit, clampText, HttpError } from '../server/http.js'
 import { requireRole, viewToken, other, ROLES, type Role } from '../server/auth.js'
 import { notify } from '../server/push.js'
+import { config } from '../src/config.js'
 
 const KEY = 'album'
 const MAX_BYTES = 4 * 1024 * 1024 // batas body Vercel Function 4,5 MB
@@ -94,7 +95,7 @@ export default route({
     await blob().put(blobPath(item.id), data, type)
     await kv().hset(KEY, item.id, JSON.stringify(item))
     await notify(other(me), {
-      title: me === 'dilla' ? 'Dilla nambah foto ke album 📸' : 'Parid nambah foto ke album 📸',
+      title: `${me === 'dilla' ? config.nama : config.pengirim} nambah foto ke album 📸`,
       body: caption ? `“${caption.slice(0, 60)}”` : 'Intip di Album Kenangan.',
       url: '/?buka=kenangan',
       tag: 'album',
@@ -130,7 +131,7 @@ export default route({
     if (!ID_RE.test(id)) throw new HttpError(400, 'id tidak valid')
     const it = await getItem(id)
     if (!it) return json({ ok: true })
-    // Masing-masing hapus fotonya sendiri; Parid (admin) boleh hapus apa saja untuk moderasi.
+    // Masing-masing hapus fotonya sendiri; Farid (admin, peran 'parid') boleh hapus apa saja untuk moderasi.
     if (it.by !== me && me !== 'parid') throw new HttpError(403, 'Foto ini cuma bisa dihapus yang upload')
     await blob().del(blobPath(it.id))
     await kv().hdel(KEY, id)

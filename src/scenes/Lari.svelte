@@ -11,7 +11,7 @@
   import { config } from '../config'
   import { sesi, api } from '../lib/ruang.svelte'
 
-  // Tantang Parid: rekor dua orang disimpan di server (kalau sudah masuk Ruang Kita).
+  // Tantang Farid: rekor dua orang disimpan di server (kalau sudah masuk Ruang Kita).
   type Board = Record<'dilla' | 'parid', { best: number }>
   let lawanBest = $state<number | null>(null)
   let myCloud = 0

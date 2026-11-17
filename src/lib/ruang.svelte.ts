@@ -1,5 +1,6 @@
 // "Ruang Kita": sesi login, panggilan API, sinkron progres ke cloud, dan Web Push.
 import { game, type Saved } from './state.svelte'
+import { config } from '../config'
 
 export type Role = 'dilla' | 'parid'
 const TOKEN_KEY = 'ruang-kita-token'
@@ -42,7 +43,7 @@ class Sesi {
 
   /** Nama lawan bicara. */
   get lawan() {
-    return this.role === 'parid' ? 'Dilla' : 'Parid'
+    return this.role === 'parid' ? config.nama : config.pengirim
   }
 
   async login(token: string, role: Role) {
@@ -54,7 +55,7 @@ class Sesi {
       /* private mode: login hanya bertahan selama tab terbuka */
     }
     if (role === 'parid') {
-      // Perangkat Parid: buka semua scene tanpa harus melewati alur ultah.
+      // Perangkat Farid (peran internal 'parid'): buka semua scene tanpa harus melewati alur ultah.
       game.unlocked = true
       game.finished = true
       game.save()

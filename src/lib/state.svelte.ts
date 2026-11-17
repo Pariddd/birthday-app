@@ -16,7 +16,7 @@ export const SCENES = [
   { id: 'memory', judul: 'Memory match' },
   { id: 'tebak', judul: 'Tebak foto' },
   { id: 'lari', judul: 'Lari Cupcake' },
-  // Ruang Kita (butuh server): dua arah Dilla ⇄ Parid
+  // Ruang Kita (butuh server): dua arah Dilla ⇄ Farid
   { id: 'kotak', judul: 'Kotak Surat' },
   { id: 'kenangan', judul: 'Album Kenangan' },
   { id: 'kapsul', judul: 'Kapsul Waktu' },
