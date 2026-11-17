@@ -103,9 +103,14 @@
       <h2 class="hand sec">Tahap-tahap taman</h2>
       <div class="stages">
         {#each s.tahapList as t, i (i)}
-          <div class="st" class:now={i === s.tahap} class:future={i > s.tahap}>
-            <Tanaman tahap={i} size={64} diam />
-            <b>{t.nama}</b>
+          <!-- Tahap yang belum dicapai diblur: tahap berikutnya sedikit kelihatan (namanya ditampilkan),
+               tahap sesudahnya makin buram dan namanya dirahasiakan. -->
+          <div class="st" class:now={i === s.tahap} class:next={i === s.tahap + 1} class:far={i > s.tahap + 1}>
+            <span class="pic" aria-hidden={i > s.tahap}>
+              <Tanaman tahap={i} size={64} diam />
+              {#if i > s.tahap}<span class="lock"><Icon name="lock" size={16} stroke={2.4} /></span>{/if}
+            </span>
+            <b>{i > s.tahap + 1 ? '???' : t.nama}</b>
             <small>{i === 0 ? 'awal' : `${t.min} hari`}</small>
           </div>
         {/each}
@@ -373,9 +378,38 @@
     background: #e3f4ee;
     box-shadow: 2px 2px 0 var(--ink);
   }
-  .st.future :global(svg) {
-    opacity: 0.35;
-    filter: grayscale(0.6);
+  .pic {
+    position: relative;
+    display: block;
+    overflow: hidden; /* blur tidak meluber keluar kotak */
+    border-radius: 10px;
+  }
+  .st.next .pic > :global(svg.tanaman) {
+    filter: blur(3px) saturate(0.8);
+    opacity: 0.8;
+  }
+  .st.far .pic > :global(svg.tanaman) {
+    filter: blur(6px) grayscale(0.5);
+    opacity: 0.6;
+  }
+  .lock {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    translate: -50% -50%;
+    width: 30px;
+    height: 30px;
+    border: 2px solid var(--ink);
+    border-radius: 50%;
+    background: #fff;
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .st.far b {
+    letter-spacing: 2px;
+    color: var(--muted-2);
   }
   .st b {
     font-size: 11px;
