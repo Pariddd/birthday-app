@@ -90,21 +90,33 @@ export async function api<T = Record<string, unknown>>(path: string, o: Opts = {
     headers['content-type'] = 'application/json'
     body = JSON.stringify(o.body)
   }
+  // Batas waktu: tanpa ini, server yang tidak menjawab bikin tampilan "sebentar…" selamanya.
+  const ctl = new AbortController()
+  let timedOut = false
+  const timer = setTimeout(() => {
+    timedOut = true
+    ctl.abort()
+  }, o.raw ? 90_000 : 15_000)
+  o.signal?.addEventListener('abort', () => ctl.abort())
   let res: Response
   try {
-    res = await fetch(`/api/${path}`, { method: o.method ?? (body ? 'POST' : 'GET'), headers, body, signal: o.signal })
+    res = await fetch(`/api/${path}`, { method: o.method ?? (body ? 'POST' : 'GET'), headers, body, signal: ctl.signal })
   } catch (e) {
+    if (timedOut) throw new ApiError(0, 'Server tidak menjawab (lebih dari 15 detik). Coba lagi sebentar ya.', 'timeout')
     if ((e as Error).name === 'AbortError') throw e
     throw new ApiError(0, 'Koneksi internetnya lagi putus. Coba lagi ya.')
+  } finally {
+    clearTimeout(timer)
   }
   let data: Record<string, unknown> = {}
   try {
     data = await res.json()
   } catch {
-    /* bukan JSON */
+    // Bukan JSON: biasanya /api belum ter-deploy (yang terkirim malah halaman HTML) atau error platform.
+    if (res.ok) throw new ApiError(res.status, 'Server Ruang Kita belum aktif di deploy ini (/api tidak ditemukan).', 'noapi')
   }
   if (!res.ok) {
-    const err = new ApiError(res.status, String(data.error ?? 'Ada yang salah. Coba lagi ya.'), data.code as string | undefined)
+    const err = new ApiError(res.status, String(data.error ?? `Server error (${res.status}). Coba lagi ya.`), data.code as string | undefined)
     if (res.status === 401 && err.code === 'auth') sesi.logout()
     throw err
   }
