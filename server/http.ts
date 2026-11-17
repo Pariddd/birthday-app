@@ -20,9 +20,14 @@ export function json(data: unknown, status = 200, headers: Record<string, string
 type Method = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 type Handler = (req: Request, url: URL) => Promise<Response>
 
-/** Bungkus handler per metode HTTP + penanganan error yang seragam. */
+/**
+ * Bungkus handler per metode HTTP + penanganan error yang seragam.
+ * Dikembalikan sebagai `{ fetch }` (export Web Standard Vercel). PENTING: `export default function (req)`
+ * biasa dianggap Vercel sebagai handler Node `(req, res)` → req bukan Request, respons tidak pernah terkirim.
+ */
 export function route(handlers: Partial<Record<Method, Handler>>) {
-  return async function handler(req: Request): Promise<Response> {
+  return { fetch: handler }
+  async function handler(req: Request): Promise<Response> {
     const h = handlers[req.method as Method]
     if (!h) return json({ error: 'Metode tidak didukung' }, 405, { allow: Object.keys(handlers).join(', ') })
     try {

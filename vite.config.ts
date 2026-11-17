@@ -33,8 +33,9 @@ function apiDev(): Plugin {
             headers,
             body: method === 'GET' || method === 'HEAD' ? undefined : Buffer.concat(chunks),
           })
-          const mod = (await server.ssrLoadModule(`/api/${m[1]}.ts`)) as { default: (r: Request) => Promise<Response> }
-          const r = await mod.default(request)
+          // Sama seperti Vercel: file api/*.ts meng-export `default { fetch(request) }`.
+          const mod = (await server.ssrLoadModule(`/api/${m[1]}.ts`)) as { default: { fetch: (r: Request) => Promise<Response> } }
+          const r = await mod.default.fetch(request)
           res.statusCode = r.status
           r.headers.forEach((v, k) => res.setHeader(k, v))
           res.end(Buffer.from(await r.arrayBuffer()))
