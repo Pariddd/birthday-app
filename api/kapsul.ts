@@ -6,6 +6,7 @@ import { route, json, readJson, rateLimit, clampText, HttpError } from '../serve
 import { requireRole, other, safeEqual, type Role } from '../server/auth.js'
 import { notify } from '../server/push.js'
 import { config } from '../src/config.js'
+import { siram } from '../server/streak.js'
 
 const KEY = 'kapsul:item'
 const MAX_TEKS = 6000
@@ -135,6 +136,7 @@ export default route({
 
     const k: Kapsul = { id: now.toString(36) + randomBytes(5).toString('hex'), from: me, label, teks, bukaPada, dibuat: now, diubah: now, dibaca: [] }
     await simpan(k)
+    await siram(me, { dilla: config.nama, parid: config.pengirim })
     await notify(other(me), {
       title: `${nama(me)} menitipkan kapsul waktu 💌`,
       body: `Baru bisa dibuka ${fmtWaktu(bukaPada)}.`,

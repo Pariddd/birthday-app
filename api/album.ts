@@ -6,6 +6,7 @@ import { requireRole, other, ROLES, type Role } from '../server/auth.js'
 import { readImage, headerText, newId, blobPath, fotoSrc, ID_RE } from '../server/gambar.js'
 import { notify } from '../server/push.js'
 import { config } from '../src/config.js'
+import { siram } from '../server/streak.js'
 
 const KEY = 'album'
 const MAX_ITEMS = 400 // ±400 × 400 KB ≈ 160 MB, jauh di bawah kuota Blob gratis 1 GB
@@ -65,6 +66,7 @@ export default route({
     }
     await blob().put(blobPath('album', item.id), img.data, img.type)
     await kv().hset(KEY, item.id, JSON.stringify(item))
+    await siram(me, { dilla: config.nama, parid: config.pengirim })
     await notify(other(me), {
       title: `${me === 'dilla' ? config.nama : config.pengirim} nambah foto ke album 📸`,
       body: caption ? `“${caption.slice(0, 60)}”` : 'Intip di Album Kenangan.',

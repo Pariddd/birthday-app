@@ -5,9 +5,10 @@
   import ArcadeHeader from '../components/ArcadeHeader.svelte'
   import { KARTU_DOA } from '../doa'
   import { onMount } from 'svelte'
-  import { sesi, refreshUnread } from '../lib/ruang.svelte'
+  import { sesi, refreshUnread, refreshStreak } from '../lib/ruang.svelte'
   import AkunSheet from '../components/AkunSheet.svelte'
   import Avatar from '../components/Avatar.svelte'
+  import Tanaman from '../components/Tanaman.svelte'
   import Icon from '../components/Icon.svelte'
 
   const sisa = $derived(config.foto.length - game.collected.length)
@@ -18,7 +19,12 @@
   let akun = $state(false)
   onMount(() => {
     void refreshUnread()
-    const vis = () => !document.hidden && refreshUnread()
+    void refreshStreak()
+    const vis = () => {
+      if (document.hidden) return
+      void refreshUnread()
+      void refreshStreak()
+    }
     document.addEventListener('visibilitychange', vis)
     return () => document.removeEventListener('visibilitychange', vis)
   })
@@ -73,6 +79,19 @@
         <span class="chip"><Icon name="lock" size={14} stroke={2} /> pakai PIN</span>
       {/if}
     </div>
+    <button class="card garden" onclick={() => game.go('taman')}>
+      <span class="pot"><Tanaman tahap={sesi.streak?.tahap ?? 0} size={52} diam /></span>
+      <span class="txt">
+        <b>Taman Kita {#if sesi.streak && sesi.streak.streak > 0}<i>🔥 {sesi.streak.streak}</i>{/if}</b>
+        <span>
+          {#if !sesi.role}tumbuh kalau kalian sama-sama kirim sesuatu
+          {:else if !sesi.streak}…
+          {:else if sesi.streak.hariIni.dilla && sesi.streak.hariIni.parid}{sesi.streak.namaTahap} · hari ini sudah disiram 💧
+          {:else if sesi.streak.hariIni[sesi.role]}{sesi.streak.namaTahap} · tinggal nunggu {sesi.lawan}
+          {:else}{sesi.streak.namaTahap} · hari ini belum disiram{/if}
+        </span>
+      </span>
+    </button>
     <button class="card mail" onclick={() => game.go('kotak')}>
       <svg aria-hidden="true" viewBox="0 0 240 180" fill="none" stroke="#23408E" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"><path d="M22 40 L218 36 L222 160 L18 164 Z" fill="#FFFFFF" /><path d="M22 40 L120 110 L218 36" fill="#FBD3DE" /><circle cx="120" cy="110" r="26" fill="#E0557A" stroke-width="6" /></svg>
       <span class="txt">
@@ -313,6 +332,39 @@
   .who {
     cursor: pointer;
     padding-left: 4px;
+  }
+  .card.garden {
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    background: #e3f4ee;
+    padding: 8px 14px 8px 8px;
+  }
+  .card.garden .pot {
+    width: 56px;
+    height: 60px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  .card.garden .pot :global(svg) {
+    width: 52px;
+    height: 57px;
+  }
+  .card.garden .txt {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .card.garden b i {
+    font-style: normal;
+    font-size: 14px;
+    margin-left: 4px;
+    padding: 1px 8px;
+    border: 2px solid var(--ink);
+    border-radius: 999px;
+    background: #fff4cc;
   }
   .card.mail {
     position: relative;

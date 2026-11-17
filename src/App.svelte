@@ -22,6 +22,7 @@
   import Kotak from './scenes/Kotak.svelte'
   import Kenangan from './scenes/Kenangan.svelte'
   import Kapsul from './scenes/Kapsul.svelte'
+  import Taman from './scenes/Taman.svelte'
 
   const VIEWS = {
     kunci: Kunci,
@@ -42,6 +43,7 @@
     kotak: Kotak,
     kenangan: Kenangan,
     kapsul: Kapsul,
+    taman: Taman,
   }
 
   // Mode uji (hanya saat `npm run dev`): ?scene=lilin langsung lompat ke scene tsb.
@@ -61,7 +63,7 @@
     if (resumed) startMusic()
   }
 
-  const isArcade = $derived(['arcade', 'claw', 'album', 'photobooth', 'memory', 'tebak', 'lari', 'kotak', 'kenangan', 'kapsul'].includes(game.scene))
+  const isArcade = $derived(['arcade', 'claw', 'album', 'photobooth', 'memory', 'tebak', 'lari', 'kotak', 'kenangan', 'kapsul', 'taman'].includes(game.scene))
   const showChrome = $derived(game.scene !== 'kunci')
   const Current = $derived(VIEWS[game.scene])
   const dur = reducedMotion ? 0 : 450

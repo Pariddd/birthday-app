@@ -6,6 +6,7 @@ import { requireRole, other, type Role } from '../server/auth.js'
 import { notify } from '../server/push.js'
 import { readImage, headerText, newId, blobPath, fotoSrc } from '../server/gambar.js'
 import { config } from '../src/config.js'
+import { siram } from '../server/streak.js'
 
 const LIST = 'msg:list'
 const SEQ = 'msg:seq'
@@ -89,6 +90,7 @@ export default route({
       if (!text) throw new HttpError(400, 'Suratnya masih kosong')
       const msg: Msg = { id: await kv().incr(SEQ), from: me, text, at: Date.now() }
       await simpan(msg)
+      await siram(me, { dilla: config.nama, parid: config.pengirim })
       // Isi surat sengaja TIDAK ditaruh di notifikasi (bisa terbaca di layar kunci).
       await notify(other(me), {
         title: me === 'dilla' ? `Surat baru dari ${config.nama}` : `Ada surat baru dari ${config.pengirim}`,
@@ -109,6 +111,7 @@ export default route({
     await blob().put(blobPath('pesan', fotoId), img.data, img.type)
     const msg: Msg = { id: await kv().incr(SEQ), from: me, text, at: Date.now(), foto: { id: fotoId, w: img.w, h: img.h } }
     await simpan(msg)
+    await siram(me, { dilla: config.nama, parid: config.pengirim })
     await notify(other(me), {
       title: `${nama(me)} ngirim foto 📷`,
       body: 'Buka Kotak Surat buat lihat ya.',

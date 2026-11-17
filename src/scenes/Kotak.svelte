@@ -222,7 +222,12 @@
     <div class="wrap">
       <div class="bar">
         <span class="with">{#if me}<Avatar role={me === 'dilla' ? 'parid' : 'dilla'} size={26} />{/if} surat-suratan sama <b>{sesi.lawan}</b></span>
-        <NotifToggle />
+        <span class="right">
+          {#if sesi.streak}
+            <button class="chip streak" onclick={() => game.go('taman')} aria-label="Taman Kita: {sesi.streak.streak} hari">🌱 {sesi.streak.streak}</button>
+          {/if}
+          <NotifToggle />
+        </span>
       </div>
 
       <div class="list paper" bind:this={list} aria-live="polite">
@@ -333,6 +338,16 @@
     justify-content: space-between;
     gap: 8px;
     flex-wrap: wrap;
+  }
+  .right {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+  .streak {
+    cursor: pointer;
+    background: #e3f4ee;
+    min-height: 36px;
   }
   .with {
     display: inline-flex;

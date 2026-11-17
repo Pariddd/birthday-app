@@ -72,7 +72,7 @@ Semua langkah di dashboard project Vercel kamu. Lakukan **sebelum** Dilla membuk
    | `VAPID_PUBLIC_KEY` | dari langkah 3 |
    | `VAPID_PRIVATE_KEY` | dari langkah 3 (**rahasia**) |
    | `VAPID_SUBJECT` | `mailto:emailkamu@gmail.com` |
-   | `CRON_SECRET` | string acak ≥ 16 karakter (cron harian 00:05 WIB: ucapan ultah + kabar kapsul yang terbuka hari ini) |
+   | `CRON_SECRET` | string acak ≥ 16 karakter (cron harian: 00:05 WIB ucapan ultah + kabar kapsul, 20:05 WIB pengingat Taman Kita) |
 
 5. **Redeploy** (Deployments → ⋯ → Redeploy).
 6. Di HP-mu: buka website → Arcade → **Ruang Kita** → *Aku Farid* → masuk → nyalakan notifikasi.
@@ -87,6 +87,7 @@ Semua langkah di dashboard project Vercel kamu. Lakukan **sebelum** Dilla membuk
 - Kapsul waktu dikunci di **server**: isi surat tidak pernah dikirim ke penerima sebelum waktu buka yang dipilih penulisnya (1 menit s.d. 10 tahun ke depan). Penulis masih bisa mengubah/menghapus sebelum terbuka; setelah terbuka, kapsul tersegel permanen.
 - Notifikasi kapsul: saat dititipkan (berisi tanggal bukanya), lalu oleh cron harian 00:05 WIB untuk kapsul yang terbuka hari itu. Cron paket Hobby hanya sekali sehari, jadi notifikasi tidak tepat di menit bukanya.
 - Celah yang tersisa: siapa pun yang memegang link bisa *membuat PIN duluan* sebelum Dilla. Karena itu kamu dapat notifikasi saat PIN dibuat; kalau bukan Dilla, buka **Ruang Kita → nama kamu → Reset PIN Dilla**.
+- Taman Kita (streak): tanaman tumbuh di hari Dilla **dan** Farid sama-sama mengirim surat/foto/album/kapsul (hari WIB). 8 tahap (biji → pohon legendaris di 100 hari). Pelindung 🛡️ didapat tiap 7 hari (maks. 2) dan otomatis menutup hari yang terlewat. Riwayat disimpan per hari di key `streak:hari`; streak selalu dihitung ulang dari riwayat itu.
 - Kuota gratis: Upstash 500 ribu perintah/bulan, Blob 1 GB. Album dibatasi 400 foto (dikompres ±300–500 KB di HP sebelum upload).
 
 ## Catatan kompatibilitas

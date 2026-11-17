@@ -32,6 +32,8 @@ class Sesi {
   token: string | null = null
   role = $state<Role | null>(null)
   unread = $state(0)
+  /** Status Taman Kita (streak siram berdua). */
+  streak = $state<Streak | null>(null)
   /** Foto profil kedua orang (null = belum pasang, tampil inisial). */
   profil = $state<Record<Role, { src: string; at: number } | null>>({ dilla: null, parid: null })
 
@@ -64,6 +66,7 @@ class Sesi {
     }
     startSync()
     void refreshProfil()
+    void refreshStreak()
     if (role === 'dilla') await pullProgres()
   }
 
@@ -72,6 +75,7 @@ class Sesi {
     this.role = null
     this.unread = 0
     this.profil = { dilla: null, parid: null }
+    this.streak = null
     game.afterSave = null
     try {
       localStorage.removeItem(TOKEN_KEY)
@@ -118,6 +122,10 @@ export async function api<T = Record<string, unknown>>(path: string, o: Opts = {
   } catch {
     // Bukan JSON: biasanya /api belum ter-deploy (yang terkirim malah halaman HTML) atau error platform.
     if (res.ok) throw new ApiError(res.status, 'Server Ruang Kita belum aktif di deploy ini (/api tidak ditemukan).', 'noapi')
+  }
+  // Kirim surat/foto/kapsul = menyiram Taman Kita → perbarui status streak.
+  if (res.ok && (o.method ?? (body ? 'POST' : 'GET')) === 'POST' && /^(pesan|album|kapsul)\b/.test(path) && !(o.body as { action?: string } | undefined)?.action) {
+    setTimeout(() => void refreshStreak(), 300)
   }
   if (!res.ok) {
     const err = new ApiError(res.status, String(data.error ?? `Server error (${res.status}). Coba lagi ya.`), data.code as string | undefined)
@@ -168,6 +176,29 @@ export async function pullProgres() {
   }
 }
 
+// ---------- Taman Kita (streak) ----------
+export type Streak = {
+  streak: number
+  best: number
+  freezes: number
+  hariIni: Record<Role, boolean>
+  hariIniTgl: string
+  tahap: number
+  namaTahap: string
+  berikut: { nama: string; sisa: number } | null
+  tahapList: { nama: string; min: number }[]
+  kalender: { tgl: string; d: boolean; p: boolean; beku: boolean }[]
+}
+
+export async function refreshStreak() {
+  if (!sesi.role) return
+  try {
+    sesi.streak = await api<Streak>('streak')
+  } catch {
+    /* abaikan */
+  }
+}
+
 // ---------- foto profil ----------
 export async function refreshProfil() {
   if (!sesi.role) return
@@ -184,6 +215,7 @@ function startSync() {
 if (sesi.role) {
   startSync()
   void refreshProfil()
+  void refreshStreak()
 }
 
 // ---------- jumlah surat belum dibaca ----------

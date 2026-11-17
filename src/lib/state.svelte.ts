@@ -20,10 +20,11 @@ export const SCENES = [
   { id: 'kotak', judul: 'Kotak Surat' },
   { id: 'kenangan', judul: 'Album Kenangan' },
   { id: 'kapsul', judul: 'Kapsul Waktu' },
+  { id: 'taman', judul: 'Taman Kita' },
 ] as const
 
 /** Scene "Ruang Kita" — tidak ikut alur ulang tahun (next() berhenti di Lari). */
-export const RUANG: readonly SceneId[] = ['kotak', 'kenangan', 'kapsul']
+export const RUANG: readonly SceneId[] = ['kotak', 'kenangan', 'kapsul', 'taman']
 
 export type SceneId = (typeof SCENES)[number]['id']
 export type CakeArea = 'alas' | 'krim' | 'atas' | 'bawah' | 'stroberi'
