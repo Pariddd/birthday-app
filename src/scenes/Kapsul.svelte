@@ -2,7 +2,7 @@
   import { onMount } from 'svelte'
   import { fade, fly, scale } from 'svelte/transition'
   import { config } from '../config'
-  import { sesi, api, ApiError, waktu, type Role } from '../lib/ruang.svelte'
+  import { sesi, api, ApiError, waktu, tutupNotif, type Role } from '../lib/ruang.svelte'
   import { sfx } from '../lib/audio'
   import { burst } from '../lib/fx'
   import { game } from '../lib/state.svelte'
@@ -43,6 +43,7 @@
       skew = r.sekarang - Date.now()
       data = r
       error = ''
+      void tutupNotif('kapsul')
     } catch (e) {
       if (e instanceof ApiError && e.status !== 401) error = e.message
     }

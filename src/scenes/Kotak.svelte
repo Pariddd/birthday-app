@@ -2,7 +2,7 @@
   import { onMount, tick } from 'svelte'
   import { fly } from 'svelte/transition'
   import { config } from '../config'
-  import { sesi, api, ApiError, type Role } from '../lib/ruang.svelte'
+  import { sesi, api, ApiError, tandaiDibaca, tutupNotif, type Role } from '../lib/ruang.svelte'
   import { sfx } from '../lib/audio'
   import { game } from '../lib/state.svelte'
   import ArcadeHeader from '../components/ArcadeHeader.svelte'
@@ -46,8 +46,10 @@
     if (!me || document.hidden || game.scene !== 'kotak') return
     if (lastId > read[me]) {
       read = { ...read, [me]: lastId }
+      await tandaiDibaca(lastId)
+    } else {
       sesi.unread = 0
-      await api('pesan', { body: { action: 'read', upTo: lastId } }).catch(() => {})
+      void tutupNotif('pesan')
     }
   }
 

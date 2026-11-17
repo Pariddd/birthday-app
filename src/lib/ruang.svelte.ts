@@ -170,13 +170,38 @@ function startSync() {
 if (sesi.role) startSync()
 
 // ---------- jumlah surat belum dibaca ----------
+// Penanda "sudah dibaca" yang sedang dikirim. Badge di lobi menunggu ini selesai dulu: tanpa itu,
+// keluar dari Kotak Surat dengan cepat bisa membuat lobi bertanya ke server SEBELUM penanda tersimpan
+// (dua request paralel di Vercel), lalu badge "1 surat baru" muncul lagi padahal sudah dibaca.
+let readPending: Promise<unknown> = Promise.resolve()
+
+export function tandaiDibaca(upTo: number) {
+  sesi.unread = 0
+  void tutupNotif('pesan')
+  readPending = api('pesan', { body: { action: 'read', upTo } }).catch(() => {})
+  return readPending
+}
+
 export async function refreshUnread() {
   if (!sesi.role) return
   try {
+    await readPending
     const r = await api<{ unread: number }>('pesan?ringkas=1')
     sesi.unread = r.unread
+    if (r.unread === 0) void tutupNotif('pesan')
   } catch {
     /* abaikan */
+  }
+}
+
+/** Hapus notifikasi HP yang sudah tidak relevan (mis. "surat baru" setelah suratnya dibaca). */
+export async function tutupNotif(prefix: string) {
+  try {
+    const reg = await navigator.serviceWorker?.getRegistration()
+    const list = (await reg?.getNotifications()) ?? []
+    for (const n of list) if (n.tag?.startsWith(prefix)) n.close()
+  } catch {
+    /* browser tanpa dukungan: abaikan */
   }
 }
 
