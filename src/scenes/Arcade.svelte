@@ -5,7 +5,10 @@
   import ArcadeHeader from '../components/ArcadeHeader.svelte'
   import { KARTU_DOA } from '../doa'
   import { onMount } from 'svelte'
-  import { sesi, refreshUnread, refreshStreak } from '../lib/ruang.svelte'
+  import { sesi, refreshUnread, refreshStreak, api } from '../lib/ruang.svelte'
+  import { fade, fly } from 'svelte/transition'
+  import { burst } from '../lib/fx'
+  import RuangGate from '../components/RuangGate.svelte'
   import AkunSheet from '../components/AkunSheet.svelte'
   import Avatar from '../components/Avatar.svelte'
   import Tanaman from '../components/Tanaman.svelte'
@@ -15,9 +18,27 @@
   const sisaDoa = $derived(KARTU_DOA.length - game.doa.length)
   const starFound = $derived(game.secrets.includes(2))
 
-  // Ruang Kita
+  // Ruang Kita: sebelum masuk, kartunya diblur + satu tombol "Buka Ruang Kita" (gerbang PIN di sheet).
   let akun = $state(false)
+  let gerbang = $state(false)
+  let pinSet = $state<boolean | null>(null)
+  let baruBuka = $state(false)
+  let sebelumnya = sesi.role
+  $effect(() => {
+    const r = sesi.role
+    if (r && !sebelumnya) {
+      // Baru saja masuk: tutup sheet, buka blur dengan sedikit perayaan.
+      gerbang = false
+      baruBuka = true
+      sfx.unlock()
+      burst({ small: true, y: 0.55 })
+      void refreshUnread()
+      setTimeout(() => (baruBuka = false), 1400)
+    }
+    sebelumnya = r
+  })
   onMount(() => {
+    if (!sesi.role) api<{ pinSet: boolean }>('auth').then((r) => (pinSet = r.pinSet)).catch(() => {})
     void refreshUnread()
     void refreshStreak()
     const vis = () => {
@@ -76,9 +97,11 @@
       {#if sesi.role}
         <button class="chip who" onclick={() => (akun = true)}><Avatar role={sesi.role} size={22} /> {sesi.role === 'parid' ? config.pengirim : config.nama}</button>
       {:else}
-        <span class="chip"><Icon name="lock" size={14} stroke={2} /> pakai PIN</span>
+        <span class="chip"><Icon name="lock" size={14} stroke={2} /> privat</span>
       {/if}
     </div>
+    <div class="kunci-wrap">
+    <div class="isi" class:terkunci={!sesi.role} class:baru={baruBuka} inert={!sesi.role} aria-hidden={!sesi.role}>
     <button class="card garden" onclick={() => game.go('taman')}>
       <span class="pot"><Tanaman tahap={sesi.streak?.tahap ?? 0} size={52} diam /></span>
       <span class="txt">
@@ -109,6 +132,23 @@
         <svg aria-hidden="true" viewBox="0 0 24 24" fill="#E8F4FF" stroke="#23408E" stroke-width="1.8" stroke-linejoin="round"><rect x="8" y="2" width="8" height="3" rx="1" fill="#C3B1F0" /><path d="M8.5 5 C5 7 4.5 10 4.5 13 V19 a2.5 2.5 0 0 0 2.5 2.5 H17 a2.5 2.5 0 0 0 2.5-2.5 V13 C19.5 10 19 7 15.5 5 Z" /><path d="M8 13 l4 3 l4 -3" fill="none" /></svg>
         <b>Kapsul Waktu</b><span>surat buat dibuka nanti</span>
       </button>
+    </div>
+    </div>
+    {#if !sesi.role}
+      <div class="kunci" transition:fade={{ duration: 400 }}>
+        <svg aria-hidden="true" viewBox="0 0 120 120" fill="none" stroke="#23408E" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M36 54 V40 a24 24 0 0 1 48 0 V54" />
+          <rect x="22" y="52" width="76" height="58" rx="14" fill="#FFC9D9" />
+          <path d="M60 92 s-13-8-13-17 a7 7 0 0 1 13-3 a7 7 0 0 1 13 3 c0 9-13 17-13 17z" fill="#E0557A" stroke-width="2.6" />
+        </svg>
+        <p class="hand">Khusus {config.nama} & {config.pengirim}</p>
+        <small>surat, album, kapsul waktu, dan taman kalian</small>
+        <button class="btn pink" onclick={() => (gerbang = true)}>
+          <Icon name="unlock" />
+          {pinSet === false ? 'Bikin PIN dulu' : 'Buka Ruang Kita'}
+        </button>
+      </div>
+    {/if}
     </div>
   </div>
 
@@ -151,6 +191,16 @@
 </section>
 
 {#if akun}<AkunSheet onclose={() => (akun = false)} />{/if}
+
+{#if gerbang && !sesi.role}
+  <div class="gback overlay-fixed" role="presentation" onclick={() => (gerbang = false)} transition:fade={{ duration: 150 }}></div>
+  <div class="gsheet overlay-fixed" role="dialog" aria-modal="true" aria-label="Masuk Ruang Kita" transition:fly={{ y: 320, duration: 280 }}>
+    <button class="icon-btn gclose" aria-label="Tutup" onclick={() => (gerbang = false)}><Icon name="close" /></button>
+    <RuangGate alasan="Satu PIN untuk membuka semuanya: Kotak Surat, Album Kenangan, Kapsul Waktu, dan Taman Kita.">
+      <span></span>
+    </RuangGate>
+  </div>
+{/if}
 
 <style>
   .scene.arcade {
@@ -318,6 +368,91 @@
     border: 2.5px dashed var(--ink);
     border-radius: 22px 18px 24px 19px;
     background: rgba(255, 255, 255, 0.55);
+  }
+  .kunci-wrap {
+    position: relative;
+  }
+  .isi {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    transition:
+      filter 0.7s ease,
+      opacity 0.7s ease;
+  }
+  .isi.terkunci {
+    filter: blur(5px) saturate(0.7);
+    opacity: 0.7;
+    pointer-events: none;
+    user-select: none;
+  }
+  .isi.baru {
+    animation: terbuka 0.9s ease-out;
+  }
+  @keyframes terbuka {
+    0% {
+      scale: 0.97;
+    }
+    60% {
+      scale: 1.02;
+    }
+    100% {
+      scale: 1;
+    }
+  }
+  .kunci {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 4px;
+    padding: 12px;
+  }
+  .kunci svg {
+    width: 64px;
+    height: 64px;
+    filter: drop-shadow(2px 2px 0 rgba(35, 64, 142, 0.25));
+  }
+  .kunci .hand {
+    font-size: 28px;
+    line-height: 1;
+    color: var(--pink-dark);
+    text-shadow: 0 0 8px #fff, 0 0 2px #fff;
+  }
+  .kunci small {
+    font-size: 12.5px;
+    font-weight: 800;
+    color: var(--ink);
+    text-shadow: 0 0 6px #fff, 0 0 2px #fff;
+  }
+  .kunci .btn {
+    margin-top: 10px;
+    min-height: 50px;
+  }
+  .gback {
+    z-index: 70;
+    background: rgba(22, 40, 90, 0.4);
+  }
+  .gsheet {
+    z-index: 71;
+    top: auto;
+    max-height: 92%;
+    overflow-y: auto;
+    background: var(--arcade-bg);
+    border-top: 2.5px solid var(--ink);
+    border-radius: 24px 24px 0 0;
+    padding: 18px 18px calc(18px + var(--safe-bottom));
+    display: flex;
+    flex-direction: column;
+  }
+  .gclose {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    z-index: 1;
   }
   .ruang-head {
     display: flex;
