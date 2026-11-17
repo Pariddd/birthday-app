@@ -26,7 +26,7 @@
     {#each fotos as f, i (i)}
       {#if game.collected.includes(i)}
         <button class="pol" class:gold={rarityFoto(i) === 'legendary'} class:epic={rarityFoto(i) === 'epic'} style="rotate:{tilt[i % tilt.length]}deg" onclick={() => (open = i)} use:longpress={() => game.findSecret(1)} aria-label="Foto {i + 1}: {f.caption}">
-          <span class="img"><Photo src={f.src} alt="" label="[FOTO {i + 1}]" /></span>
+          <span class="img"><Photo src={f.src} alt="" label="[FOTO {i + 1}]" style="height:auto;object-fit:contain" /></span>
           <span class="cap hand">{f.caption.length > 22 ? f.caption.slice(0, 20) + '…' : f.caption}</span>
         </button>
       {:else}
@@ -82,7 +82,7 @@
   {#if open !== null}
     <div class="lb-back overlay-fixed" role="presentation" onclick={() => (open = null)} transition:fade={{ duration: 150 }}></div>
     <div class="lightbox" role="dialog" aria-modal="true" aria-label="Foto {open + 1}" transition:scale={{ start: 0.9, duration: 200 }}>
-      <div class="lb-img" class:gold={rarityFoto(open) === 'legendary'} class:epic={rarityFoto(open) === 'epic'} use:longpress={() => game.findSecret(1)}><Photo src={fotos[open].src} alt="Foto {open + 1}" label="[FOTO {open + 1}]" /></div>
+      <div class="lb-img" class:gold={rarityFoto(open) === 'legendary'} class:epic={rarityFoto(open) === 'epic'} use:longpress={() => game.findSecret(1)}><Photo src={fotos[open].src} alt="Foto {open + 1}" label="[FOTO {open + 1}]" style="width:auto;max-width:100%;height:auto;max-height:62vh;object-fit:contain;margin:0 auto" /></div>
       <p class="hand">{fotos[open].caption}</p>
       <button class="icon-btn close" aria-label="Tutup" onclick={() => (open = null)}><Icon name="close" /></button>
     </div>
@@ -112,14 +112,18 @@
     height: 100%;
     background: #f28aa5;
   }
+  /* Masonry 2 kolom: foto tampil dengan rasio aslinya (potret/lanskap), tidak dipotong. */
   .grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    columns: 2;
     column-gap: 20px;
-    row-gap: 16px;
     padding: 0 8px 20px;
   }
   .pol,
+  .lock {
+    width: 100%;
+    break-inside: avoid;
+    margin-bottom: 18px;
+  }
   .lock {
     aspect-ratio: 1 / 1.05;
   }
@@ -166,10 +170,10 @@
     -webkit-user-select: none;
   }
   .img {
-    flex: 1;
-    min-height: 0;
+    display: block;
     overflow: hidden;
     background: #eef3fb;
+    min-height: 60px;
   }
   .cap {
     font-size: 18px;
@@ -300,9 +304,9 @@
     padding: 14px 14px 18px;
   }
   .lb-img {
-    aspect-ratio: 4 / 5;
-    max-height: 58vh;
     width: 100%;
+    display: flex;
+    justify-content: center;
     overflow: hidden;
     border: 2px solid var(--ink);
     background: #eef3fb;

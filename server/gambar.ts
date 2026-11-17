@@ -5,8 +5,21 @@ import { viewToken } from './auth.js'
 
 export const MAX_BYTES = 4 * 1024 * 1024 // batas body Vercel Function 4,5 MB
 export const ID_RE = /^[a-z0-9]{10,24}$/
-export type Folder = 'album' | 'pesan' | 'profil'
-export const FOLDERS: Folder[] = ['album', 'pesan', 'profil']
+export type Folder = 'album' | 'pesan' | 'profil' | 'video'
+export const FOLDERS: Folder[] = ['album', 'pesan', 'profil', 'video']
+
+// ---- video album ----
+export const VIDEO_TYPES = ['video/mp4', 'video/quicktime', 'video/webm']
+export const MAX_VIDEO = 60 * 1024 * 1024 // 60 MB (unggah langsung ke Blob, tidak lewat fungsi)
+export const MAX_DURASI = 90 // detik
+
+/** Magic bytes video: MP4/MOV ("ftyp" di offset 4) atau WebM/Matroska (1A 45 DF A3). */
+export function sniffVideo(b: Uint8Array): string | null {
+  const ascii = (s: number, e: number) => String.fromCharCode(...b.subarray(s, e))
+  if (b.length > 12 && ascii(4, 8) === 'ftyp') return ascii(8, 10) === 'qt' ? 'video/quicktime' : 'video/mp4'
+  if (b.length > 4 && b[0] === 0x1a && b[1] === 0x45 && b[2] === 0xdf && b[3] === 0xa3) return 'video/webm'
+  return null
+}
 
 export const newId = () => Date.now().toString(36) + randomBytes(5).toString('hex')
 /** Tanpa ekstensi: tipe file disimpan sebagai content-type blob. */

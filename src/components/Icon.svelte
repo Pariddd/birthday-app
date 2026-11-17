@@ -2,7 +2,7 @@
   type Name =
     | 'back' | 'next' | 'sound' | 'mute' | 'star' | 'lock' | 'unlock' | 'mic' | 'chat' | 'joystick'
     | 'menu' | 'flip' | 'camera' | 'switch' | 'info' | 'close' | 'eye' | 'check' | 'coin' | 'download' | 'left' | 'right'
-    | 'send' | 'heart' | 'trash' | 'plus' | 'bell' | 'bell-off' | 'user' | 'mail' | 'image' | 'refresh'
+    | 'send' | 'heart' | 'trash' | 'plus' | 'bell' | 'bell-off' | 'user' | 'mail' | 'image' | 'refresh' | 'skip'
   let { name, size = 20, color = 'currentColor', stroke = 2.4 }: { name: Name; size?: number; color?: string; stroke?: number } = $props()
 </script>
 
@@ -39,5 +39,6 @@
   {:else if name === 'mail'}<rect x="3" y="5" width="18" height="14" rx="2" /><path d="M3 7l9 6 9-6" />
   {:else if name === 'image'}<rect x="3" y="4" width="18" height="16" rx="2" /><path d="M3 16l5-5 4 4 3-3 6 6" /><circle cx="15.5" cy="9" r="1.6" />
   {:else if name === 'refresh'}<path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7" />
+  {:else if name === 'skip'}<path d="M5 6l9 6-9 6z" /><path d="M18 6v12" />
   {/if}
 </svg>

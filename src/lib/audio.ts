@@ -6,6 +6,54 @@ import { game } from './state.svelte'
 let ctx: AudioContext | null = null
 let music: HTMLAudioElement | null = null
 
+// ---------- playlist ----------
+// config.musik boleh satu file ("/audio/lagu.mp3") atau daftar lagu. Lagu diputar berurutan lalu
+// kembali ke awal; tombol ⏭ di pojok atas pindah ke lagu berikutnya.
+type Lagu = { src: string; judul: string }
+const judulDari = (src: string) =>
+  decodeURIComponent(src.split('/').pop() ?? src)
+    .replace(/\.[a-z0-9]+$/i, '')
+    .replace(/[-_]+/g, ' ')
+const raw = config.musik as unknown as string | (string | { src: string; judul?: string })[]
+export const PLAYLIST: Lagu[] = (Array.isArray(raw) ? raw : [raw])
+  .filter(Boolean)
+  .map((x) => (typeof x === 'string' ? { src: x, judul: judulDari(x) } : { src: x.src, judul: x.judul || judulDari(x.src) }))
+let idx = 0
+let gagalBeruntun = 0
+const VOL = 0.45
+
+function muat(i: number) {
+  if (!PLAYLIST.length) return null
+  idx = ((i % PLAYLIST.length) + PLAYLIST.length) % PLAYLIST.length
+  const vol = music?.volume ?? VOL
+  music?.pause()
+  const a = new Audio(PLAYLIST[idx].src)
+  a.loop = PLAYLIST.length === 1
+  a.volume = vol
+  a.preload = 'auto'
+  a.addEventListener('ended', () => laguBerikut(false))
+  a.addEventListener('error', () => {
+    // File lagu belum ada / rusak: coba lagu berikutnya; kalau semua gagal, diam saja.
+    if (++gagalBeruntun >= PLAYLIST.length) {
+      if (music === a) music = null
+      return
+    }
+    if (music === a) laguBerikut(false)
+  })
+  a.addEventListener('playing', () => (gagalBeruntun = 0))
+  music = a
+  return a
+}
+
+/** Pindah ke lagu berikutnya. Mengembalikan judulnya (untuk ditampilkan), atau null kalau tidak ada. */
+export function laguBerikut(manual = true): string | null {
+  if (PLAYLIST.length < 2 && manual) return PLAYLIST[0]?.judul ?? null
+  const a = muat(idx + 1)
+  if (a && !game.muted) void a.play().catch(() => {})
+  return PLAYLIST[idx]?.judul ?? null
+}
+export const laguSekarang = () => PLAYLIST[idx]?.judul ?? null
+
 export function unlockAudio() {
   if (!ctx) {
     const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
@@ -16,15 +64,7 @@ export function unlockAudio() {
 
 export function startMusic() {
   unlockAudio()
-  if (!music) {
-    music = new Audio(config.musik)
-    music.loop = true
-    music.volume = 0.45
-    music.preload = 'auto'
-    music.addEventListener('error', () => {
-      music = null // file lagu belum ada: diam saja
-    })
-  }
+  if (!music) muat(idx)
   if (music && !game.muted) void music.play().catch(() => {})
 }
 
@@ -37,7 +77,7 @@ export function setMuted(m: boolean) {
 }
 
 export function duckMusic(on: boolean) {
-  if (music) music.volume = on ? 0.08 : 0.45
+  if (music) music.volume = on ? 0.08 : VOL
 }
 
 type Tone = { f: number; t: number; d: number; type?: OscillatorType; g?: number; slide?: number }

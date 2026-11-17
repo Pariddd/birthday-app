@@ -18,7 +18,13 @@ export const config = {
   nomorWhatsApp: "6289518008735",
   pesanBalasan: "Makasih Giftnya Fariddd!! 😭🎂",
 
-  musik: "/audio/lagu.mp3",
+  // Lagu latar: satu file, atau beberapa lagu (diputar berurutan, tombol ⏭ untuk ganti lagu).
+  // Taruh file MP3 di public/audio/. `judul` opsional (tampil saat ganti lagu).
+  musik: [
+    { src: "/audio/lagu.mp3", judul: "lagu 1" },
+    // { src: "/audio/lagu-2.mp3", judul: "judul lagu kedua" },
+    // { src: "/audio/lagu-3.mp3", judul: "judul lagu ketiga" },
+  ] as (string | { src: string; judul?: string })[],
 
   // Foto untuk claw machine & album. Jumlahnya bebas (8, 12, 20, …).
   // Isi kapsul diacak tiap kali mesin dibuka. Kelangkaan diatur lewat `rarity`:

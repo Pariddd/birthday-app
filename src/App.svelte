@@ -1,7 +1,7 @@
 <script lang="ts">
   import { fly, fade } from 'svelte/transition'
   import { game, SCENES, reducedMotion, type SceneId } from './lib/state.svelte'
-  import { setMuted, startMusic } from './lib/audio'
+  import { setMuted, startMusic, laguBerikut, PLAYLIST } from './lib/audio'
   import Icon from './components/Icon.svelte'
   import Toast from './components/Toast.svelte'
   import Kunci from './scenes/Kunci.svelte'
@@ -93,6 +93,17 @@
             <Icon name="star" size={14} stroke={1.8} />
             rahasia {game.secrets.length}/3
           </span>
+        {/if}
+        {#if PLAYLIST.length > 1}
+          <button
+            class="icon-btn"
+            aria-label="Lagu berikutnya"
+            onclick={() => {
+              const j = laguBerikut()
+              if (game.muted) setMuted(false)
+              if (j) game.say(`♪ ${j}`, 2200)
+            }}><Icon name="skip" /></button
+          >
         {/if}
         <button class="icon-btn" aria-label={game.muted ? 'Nyalakan suara' : 'Matikan suara'} onclick={() => setMuted(!game.muted)}>
           <Icon name={game.muted ? 'mute' : 'sound'} />

@@ -9,10 +9,23 @@
   import RuangGate from '../components/RuangGate.svelte'
   import Icon from '../components/Icon.svelte'
   import Avatar from '../components/Avatar.svelte'
-  import { kompres } from '../lib/foto'
+  import { kompres, posterVideo } from '../lib/foto'
 
-  type Item = { id: string; by: Role; caption: string; at: number; w: number; h: number; love: Role[]; src: string }
-  type Pending = { key: number; url: string; blob: Blob | null; w: number; h: number; caption: string; status: 'siap' | 'kirim' | 'gagal' | 'ok'; err?: string }
+  type Item = { id: string; by: Role; caption: string; at: number; w: number; h: number; love: Role[]; src: string; video?: { dur: number }; videoSrc?: string }
+  type Pending = {
+    key: number
+    url: string
+    blob: Blob | null // foto (sudah dikompres) atau poster video
+    w: number
+    h: number
+    caption: string
+    status: 'siap' | 'kirim' | 'gagal' | 'ok'
+    err?: string
+    file?: File // video asli
+    dur?: number
+    progress?: number
+  }
+  type VideoCfg = { langsung: boolean; maxBytes: number; maxLewatFungsi: number; maxDurasi: number }
 
   const ROT = [-2.5, 1.8, -1.2, 2.4, -1.8, 1.2]
 
@@ -25,6 +38,9 @@
   let open = $state<number | null>(null)
   let picker = $state<HTMLInputElement>()
   let pkey = 0
+  let vcfg = $state<VideoCfg | null>(null)
+  const MB = (b: number) => `${Math.round(b / 1024 / 1024)} MB`
+  const durasi = (d: number) => `${Math.floor(d / 60)}:${String(Math.round(d % 60)).padStart(2, '0')}`
 
   const me = $derived(sesi.role)
   const nama = (r: Role) => (r === 'dilla' ? config.nama : config.pengirim)
@@ -32,9 +48,10 @@
 
   async function load() {
     try {
-      const r = await api<{ items: Item[]; max: number }>('album')
+      const r = await api<{ items: Item[]; max: number; video: VideoCfg }>('album')
       items = r.items
       max = r.max
+      vcfg = r.video
       error = ''
       void tutupNotif('album')
     } catch (e) {
@@ -55,13 +72,62 @@
     pending = [...pending, ...baru]
     for (let i = 0; i < files.length; i++) {
       const k = baru[i].key
+      const f = files[i]
+      if (f.type.startsWith('video/') || /\.(mp4|mov|webm|m4v)$/i.test(f.name)) {
+        await siapkanVideo(k, f)
+        continue
+      }
       try {
-        const r = await kompres(files[i])
+        const r = await kompres(f)
         pending = pending.map((p) => (p.key === k ? { ...p, ...r, url: URL.createObjectURL(r.blob) } : p))
       } catch {
         pending = pending.map((p) => (p.key === k ? { ...p, status: 'gagal', err: 'File ini tidak bisa dibaca sebagai foto.' } : p))
       }
     }
+  }
+
+  async function siapkanVideo(k: number, f: File) {
+    const gagal = (err: string) => (pending = pending.map((p) => (p.key === k ? { ...p, status: 'gagal' as const, err } : p)))
+    const batas = vcfg ? (vcfg.langsung ? vcfg.maxBytes : vcfg.maxLewatFungsi) : 4 * 1024 * 1024
+    if (f.size > batas) return gagal(`Videonya ${MB(f.size)}, maksimal ${MB(batas)}. Potong dulu ya.`)
+    try {
+      const r = await posterVideo(f)
+      if (vcfg && r.dur > vcfg.maxDurasi + 1) return gagal(`Videonya ${durasi(r.dur)}, maksimal ${durasi(vcfg.maxDurasi)}. Potong dulu ya.`)
+      pending = pending.map((p) => (p.key === k ? { ...p, blob: r.blob, w: r.w, h: r.h, dur: r.dur, file: f, url: URL.createObjectURL(r.blob) } : p))
+    } catch {
+      gagal('Video ini tidak bisa dibaca di browser ini (formatnya). Coba rekam ulang / kirim dalam MP4.')
+    }
+  }
+
+  const idAcak = () => Date.now().toString(36) + Array.from(crypto.getRandomValues(new Uint8Array(5)), (b) => b.toString(16).padStart(2, '0')).join('')
+
+  /** Unggah file video → id-nya di server. Coba langsung ke Blob dulu, cadangannya lewat fungsi (video kecil). */
+  async function unggahVideo(p: Pending): Promise<string> {
+    const f = p.file!
+    const type = f.type || 'video/mp4'
+    const progres = (n: number) => (pending = pending.map((x) => (x.key === p.key ? { ...x, progress: n } : x)))
+    if (vcfg?.langsung) {
+      try {
+        const { uploadPresigned } = await import('@vercel/blob/client')
+        const vid = idAcak()
+        await uploadPresigned(`video/${vid}`, f, {
+          access: 'private',
+          contentType: type,
+          handleUploadUrl: '/api/album',
+          headers: { authorization: `Bearer ${sesi.token}` },
+          multipart: f.size > 8 * 1024 * 1024,
+          onUploadProgress: (e) => progres(Math.round(e.percentage)),
+        })
+        return vid
+      } catch (e) {
+        console.warn('upload langsung gagal', e)
+        if (f.size > (vcfg?.maxLewatFungsi ?? 0)) throw new ApiError(0, 'Upload videonya gagal. Coba lagi ya (pastikan internetnya stabil).')
+      }
+    }
+    progres(10)
+    const r = await api<{ vid: string }>('album?unggah=video', { method: 'POST', raw: f, headers: { 'content-type': type } })
+    progres(100)
+    return r.vid
   }
 
   function buang(k: number) {
@@ -78,10 +144,15 @@
       if (!p.blob || p.status === 'ok') continue
       pending = pending.map((x) => (x.key === p.key ? { ...x, status: 'kirim', err: undefined } : x))
       try {
+        const extra: Record<string, string> = {}
+        if (p.file) {
+          extra['x-video'] = await unggahVideo(p)
+          extra['x-dur'] = String(Math.round(p.dur ?? 0))
+        }
         const r = await api<{ item: Item }>('album', {
           method: 'POST',
           raw: p.blob,
-          headers: { 'content-type': 'image/jpeg', 'x-caption': encodeURIComponent(p.caption.trim()), 'x-w': String(p.w), 'x-h': String(p.h) },
+          headers: { 'content-type': 'image/jpeg', 'x-caption': encodeURIComponent(p.caption.trim()), 'x-w': String(p.w), 'x-h': String(p.h), ...extra },
         })
         items = [r.item, ...items]
         pending = pending.map((x) => (x.key === p.key ? { ...x, status: 'ok' } : x))
@@ -94,7 +165,7 @@
     for (const p of pending.filter((x) => x.status === 'ok')) buang(p.key)
     if (ok) {
       sfx.shutter()
-      game.say(ok === 1 ? 'Fotonya masuk album!' : `${ok} foto masuk album!`)
+      game.say(ok === 1 ? 'Masuk album!' : `${ok} file masuk album!`)
     }
   }
 
@@ -146,9 +217,9 @@
 
   <RuangGate alasan="Album bersama: kamu dan {config.pengirim} sama-sama bisa nambah foto. Cuma kalian berdua yang bisa lihat.">
     <div class="top">
-      <p class="sub">Foto dari kalian berdua · {items.length}/{max}</p>
-      <button class="btn pink add" onclick={() => picker?.click()} disabled={uploading}><Icon name="plus" /> Tambah foto</button>
-      <input bind:this={picker} class="sr-only" type="file" accept="image/*" multiple onchange={pilih} tabindex="-1" aria-hidden="true" />
+      <p class="sub">Foto & video kalian berdua · {items.length}/{max}</p>
+      <button class="btn pink add" onclick={() => picker?.click()} disabled={uploading}><Icon name="plus" /> Tambah</button>
+      <input bind:this={picker} class="sr-only" type="file" accept="image/*,video/mp4,video/quicktime,video/webm,.mov,.mp4" multiple onchange={pilih} tabindex="-1" aria-hidden="true" />
     </div>
 
     {#if error}<p class="err" role="alert">{error} <button class="link" onclick={load}>Coba lagi</button></p>{/if}
@@ -165,7 +236,10 @@
       <div class="grid">
         {#each items as it, i (it.id)}
           <button class="pol" style="rotate:{ROT[i % ROT.length]}deg" onclick={() => (open = i)} in:scale={{ start: 0.9, duration: 250 }}>
-            <img src={it.src} alt={it.caption || `Foto dari ${nama(it.by)}`} loading="lazy" decoding="async" width={it.w || undefined} height={it.h || undefined} />
+            <span class="media">
+              <img src={it.src} alt={it.caption || `${it.video ? 'Video' : 'Foto'} dari ${nama(it.by)}`} loading="lazy" decoding="async" width={it.w || undefined} height={it.h || undefined} />
+              {#if it.video}<span class="play" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20"><path d="M8 5l11 7-11 7z" fill="#fff" /></svg></span><span class="dur">{durasi(it.video.dur)}</span>{/if}
+            </span>
             {#if it.caption}<span class="cap hand">{it.caption}</span>{/if}
             <span class="foot">
               <span class="by" class:dilla={it.by === 'dilla'}><Avatar role={it.by} size={16} /> {nama(it.by)}</span>
@@ -185,10 +259,16 @@
     <div class="plist">
       {#each pending as p (p.key)}
         <div class="pitem" class:bad={p.status === 'gagal'}>
-          {#if p.url}<img src={p.url} alt="" />{:else}<div class="thumb ph"></div>{/if}
+          <span class="thumbwrap">
+            {#if p.url}<img src={p.url} alt="" />{:else}<div class="thumb ph"></div>{/if}
+            {#if p.file}<span class="vbadge">▶ {durasi(p.dur ?? 0)}</span>{/if}
+          </span>
           <div class="pmeta">
             <input type="text" maxlength="140" placeholder="Kasih keterangan (opsional)" bind:value={p.caption} disabled={p.status === 'kirim'} />
-            {#if p.status === 'kirim'}<span class="st">mengunggah…</span>{/if}
+            {#if p.status === 'kirim'}
+              <span class="st">mengunggah{p.file && p.progress !== undefined ? ` ${p.progress}%` : '…'}</span>
+              {#if p.file}<span class="pbar"><span style="width:{p.progress ?? 0}%"></span></span>{/if}
+            {/if}
             {#if p.err}<span class="st bad">{p.err}</span>{/if}
           </div>
           <button class="icon-btn" aria-label="Batal" onclick={() => buang(p.key)} disabled={p.status === 'kirim'}><Icon name="close" size={18} /></button>
@@ -198,7 +278,7 @@
     <div class="acts">
       <button class="btn ghost" onclick={() => [...pending].forEach((p) => buang(p.key))} disabled={uploading}>Batal</button>
       <button class="btn pink grow" onclick={uploadSemua} disabled={uploading || !pending.some((p) => p.blob && p.status !== 'ok')}>
-        {uploading ? 'Mengunggah…' : `Upload ${pending.filter((p) => p.blob).length} foto`}
+        {uploading ? 'Mengunggah…' : `Upload ${pending.filter((p) => p.blob).length} file`}
       </button>
     </div>
   </div>
@@ -220,7 +300,12 @@
       }}
     >
       {#key cur.id}
-        <img src={cur.src} alt={cur.caption || `Foto dari ${nama(cur.by)}`} in:fade={{ duration: 200 }} />
+        {#if cur.videoSrc}
+          <!-- svelte-ignore a11y_media_has_caption -->
+          <video src={cur.videoSrc} poster={cur.src} controls playsinline preload="metadata" in:fade={{ duration: 200 }}></video>
+        {:else}
+          <img src={cur.src} alt={cur.caption || `Foto dari ${nama(cur.by)}`} in:fade={{ duration: 200 }} />
+        {/if}
       {/key}
     </div>
     <div class="lb-card">
@@ -392,6 +477,64 @@
     gap: 10px;
     min-height: 0;
   }
+  .media {
+    position: relative;
+    display: block;
+  }
+  .play {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    translate: -50% -50%;
+    width: 42px;
+    height: 42px;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    background: rgba(22, 40, 90, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-left: 3px;
+  }
+  .dur {
+    position: absolute;
+    right: 5px;
+    bottom: 5px;
+    padding: 1px 6px;
+    border-radius: 999px;
+    background: rgba(22, 40, 90, 0.75);
+    color: #fff;
+    font-size: 10.5px;
+    font-weight: 800;
+  }
+  .thumbwrap {
+    position: relative;
+    flex-shrink: 0;
+  }
+  .vbadge {
+    position: absolute;
+    left: 3px;
+    bottom: 3px;
+    padding: 0 5px;
+    border-radius: 6px;
+    background: rgba(22, 40, 90, 0.8);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 800;
+  }
+  .pbar {
+    display: block;
+    height: 6px;
+    border-radius: 999px;
+    background: var(--line);
+    overflow: hidden;
+  }
+  .pbar span {
+    display: block;
+    height: 100%;
+    background: var(--pink-dark);
+    transition: width 0.2s;
+  }
   .pitem {
     display: flex;
     align-items: center;
@@ -470,6 +613,13 @@
     align-items: center;
     justify-content: center;
     touch-action: pan-y;
+  }
+  .lb-img video {
+    max-width: 100%;
+    max-height: 100%;
+    border: 6px solid #fff;
+    border-radius: 3px;
+    background: #000;
   }
   .lb-img img {
     max-width: 100%;
