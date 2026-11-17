@@ -7,6 +7,7 @@
   import { onMount } from 'svelte'
   import { sesi, refreshUnread } from '../lib/ruang.svelte'
   import AkunSheet from '../components/AkunSheet.svelte'
+  import Avatar from '../components/Avatar.svelte'
   import Icon from '../components/Icon.svelte'
 
   const sisa = $derived(config.foto.length - game.collected.length)
@@ -67,7 +68,7 @@
     <div class="ruang-head">
       <h2 class="hand">Ruang Kita</h2>
       {#if sesi.role}
-        <button class="chip who" onclick={() => (akun = true)}><Icon name="user" size={14} stroke={2} /> {sesi.role === 'parid' ? config.pengirim : config.nama}</button>
+        <button class="chip who" onclick={() => (akun = true)}><Avatar role={sesi.role} size={22} /> {sesi.role === 'parid' ? config.pengirim : config.nama}</button>
       {:else}
         <span class="chip"><Icon name="lock" size={14} stroke={2} /> pakai PIN</span>
       {/if}
@@ -311,6 +312,7 @@
   }
   .who {
     cursor: pointer;
+    padding-left: 4px;
   }
   .card.mail {
     position: relative;

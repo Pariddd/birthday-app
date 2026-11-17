@@ -5,6 +5,8 @@
   import { game } from '../lib/state.svelte'
   import NotifToggle from './NotifToggle.svelte'
   import Icon from './Icon.svelte'
+  import Avatar from './Avatar.svelte'
+  import AvatarEditor from './AvatarEditor.svelte'
 
   let { onclose }: { onclose: () => void } = $props()
   let ganti = $state(false)
@@ -13,6 +15,40 @@
   let busy = $state(false)
   let error = $state('')
   const digits = (v: string) => v.replace(/\D/g, '').slice(0, 8)
+
+  // ---- foto profil ----
+  let picker = $state<HTMLInputElement>()
+  let fotoBusy = $state(false)
+  let edit = $state<File | null>(null)
+  function pilihFoto(e: Event) {
+    const input = e.currentTarget as HTMLInputElement
+    const file = input.files?.[0]
+    input.value = ''
+    if (file) edit = file // buka editor: atur posisi & perbesaran dulu
+  }
+  async function simpanFoto(blob: Blob) {
+    if (!sesi.role) return
+    fotoBusy = true
+    try {
+      const r = await api<Record<Role, { src: string; at: number } | null>>('profil', { method: 'POST', raw: blob, headers: { 'content-type': 'image/jpeg' } })
+      sesi.profil = { ...sesi.profil, ...r }
+      edit = null
+      game.say('Foto profil diganti!')
+    } catch (err) {
+      game.say(err instanceof ApiError ? err.message : 'File itu tidak bisa dipakai sebagai foto.')
+    } finally {
+      fotoBusy = false
+    }
+  }
+  async function hapusFoto() {
+    if (!sesi.role || !confirm('Hapus foto profil?')) return
+    try {
+      await api('profil', { method: 'DELETE' })
+      sesi.profil = { ...sesi.profil, [sesi.role]: null }
+    } catch (err) {
+      game.say(err instanceof ApiError ? err.message : 'Gagal')
+    }
+  }
 
   async function gantiPin(e: Event) {
     e.preventDefault()
@@ -55,7 +91,22 @@
     <h3 id="akun-t" class="hand">Ruang Kita</h3>
     <button class="icon-btn" aria-label="Tutup" onclick={onclose}><Icon name="close" /></button>
   </div>
-  <p class="who"><Icon name="user" size={16} /> Masuk sebagai <b>{sesi.role === 'parid' ? config.pengirim : config.nama}</b></p>
+  {#if sesi.role}
+    <div class="me">
+      <button class="avbtn" onclick={() => picker?.click()} disabled={fotoBusy} aria-label="Ganti foto profil">
+        <Avatar role={sesi.role} size={64} />
+        <span class="cam"><Icon name="camera" size={14} stroke={2} /></span>
+      </button>
+      <div class="meinfo">
+        <p class="who">Masuk sebagai <b>{sesi.role === 'parid' ? config.pengirim : config.nama}</b></p>
+        <div class="avacts">
+          <button class="chip" onclick={() => picker?.click()} disabled={fotoBusy}>{fotoBusy ? 'Mengunggah…' : sesi.profil[sesi.role] ? 'Ganti foto' : 'Pasang foto profil'}</button>
+          {#if sesi.profil[sesi.role]}<button class="chip" onclick={hapusFoto} disabled={fotoBusy}>Hapus</button>{/if}
+        </div>
+      </div>
+      <input bind:this={picker} class="sr-only" type="file" accept="image/*" onchange={pilihFoto} tabindex="-1" aria-hidden="true" />
+    </div>
+  {/if}
 
   <NotifToggle full />
 
@@ -82,6 +133,10 @@
   <button class="out" onclick={keluar}>Keluar dari perangkat ini</button>
 </div>
 
+{#if edit}
+  <AvatarEditor file={edit} onclose={() => (edit = null)} onsave={simpanFoto} onpick={() => picker?.click()} />
+{/if}
+
 <style>
   .back {
     z-index: 70;
@@ -107,6 +162,53 @@
     font-size: 36px;
     color: var(--pink-dark);
     line-height: 1;
+  }
+  .me {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  /* Reset penuh gaya tombol bawaan browser (Windows/Chrome memberi latar abu-abu & bingkai). */
+  .avbtn {
+    position: relative;
+    appearance: none;
+    -webkit-appearance: none;
+    border: 0;
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    line-height: 0;
+    border-radius: 50%;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .avbtn:disabled {
+    opacity: 0.6;
+  }
+  .cam {
+    position: absolute;
+    right: -2px;
+    bottom: -2px;
+    width: 26px;
+    height: 26px;
+    border: 2px solid var(--ink);
+    border-radius: 50%;
+    background: #fff4cc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .meinfo {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .avacts {
+    display: flex;
+    gap: 8px;
+  }
+  .avacts .chip {
+    cursor: pointer;
   }
   .who {
     display: flex;

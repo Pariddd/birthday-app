@@ -10,6 +10,7 @@
   import NotifToggle from '../components/NotifToggle.svelte'
   import Icon from '../components/Icon.svelte'
   import { kompres } from '../lib/foto'
+  import Avatar from '../components/Avatar.svelte'
 
   type Foto = { id?: string; w: number; h: number; src: string }
   type Msg = { id: number; from: Role; text: string; at: number; foto?: Foto; status?: 'sending' | 'failed'; _blob?: Blob }
@@ -220,7 +221,7 @@
   <RuangGate alasan="Kotak surat ini cuma buat kamu dan {config.pengirim}. Isinya tersimpan, bisa dibalas kapan aja.">
     <div class="wrap">
       <div class="bar">
-        <span class="with">surat-suratan sama <b>{sesi.lawan}</b></span>
+        <span class="with">{#if me}<Avatar role={me === 'dilla' ? 'parid' : 'dilla'} size={26} />{/if} surat-suratan sama <b>{sesi.lawan}</b></span>
         <NotifToggle />
       </div>
 
@@ -239,9 +240,11 @@
               <p class="day"><span>{hari(m.at)}</span></p>
             {/if}
             {@const mine = m.from === me}
-            <div class="row" class:mine in:fly={{ y: 10, duration: 220 }}>
+            {@const awal = i === 0 || msgs[i - 1].from !== m.from}
+            <div class="row" class:mine class:awal in:fly={{ y: 10, duration: 220 }}>
+              {#if !mine}<span class="avslot">{#if awal}<Avatar role={m.from} size={30} />{/if}</span>{/if}
               <div class="bubble" class:mine class:failed={m.status === 'failed'}>
-                {#if !mine && (i === 0 || msgs[i - 1].from !== m.from)}<span class="who hand">{nama(m.from)}</span>{/if}
+                {#if !mine && awal}<span class="who hand">{nama(m.from)}</span>{/if}
                 {#if m.foto}
                   <button class="photo" style="aspect-ratio:{m.foto.w && m.foto.h ? `${m.foto.w}/${m.foto.h}` : '4/3'}" onclick={() => (lihat = m.foto!)} aria-label="Lihat foto">
                     <img src={m.foto.src} alt={m.text || `Foto dari ${nama(m.from)}`} loading="lazy" decoding="async" />
@@ -332,6 +335,9 @@
     flex-wrap: wrap;
   }
   .with {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     font-size: 13px;
     font-weight: 700;
     color: var(--muted);
@@ -385,11 +391,21 @@
   }
   .row {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: flex-start;
+    gap: 6px;
+  }
+  .row.awal {
+    margin-top: 4px;
   }
   .row.mine {
+    flex-direction: column;
     align-items: flex-end;
+    gap: 0;
+  }
+  .avslot {
+    width: 30px;
+    flex-shrink: 0;
   }
   .bubble {
     max-width: 82%;

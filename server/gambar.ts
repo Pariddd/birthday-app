@@ -5,8 +5,8 @@ import { viewToken } from './auth.js'
 
 export const MAX_BYTES = 4 * 1024 * 1024 // batas body Vercel Function 4,5 MB
 export const ID_RE = /^[a-z0-9]{10,24}$/
-export type Folder = 'album' | 'pesan'
-export const FOLDERS: Folder[] = ['album', 'pesan']
+export type Folder = 'album' | 'pesan' | 'profil'
+export const FOLDERS: Folder[] = ['album', 'pesan', 'profil']
 
 export const newId = () => Date.now().toString(36) + randomBytes(5).toString('hex')
 /** Tanpa ekstensi: tipe file disimpan sebagai content-type blob. */

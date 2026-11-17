@@ -32,6 +32,8 @@ class Sesi {
   token: string | null = null
   role = $state<Role | null>(null)
   unread = $state(0)
+  /** Foto profil kedua orang (null = belum pasang, tampil inisial). */
+  profil = $state<Record<Role, { src: string; at: number } | null>>({ dilla: null, parid: null })
 
   constructor() {
     const t = readToken()
@@ -61,6 +63,7 @@ class Sesi {
       game.save()
     }
     startSync()
+    void refreshProfil()
     if (role === 'dilla') await pullProgres()
   }
 
@@ -68,6 +71,7 @@ class Sesi {
     this.token = null
     this.role = null
     this.unread = 0
+    this.profil = { dilla: null, parid: null }
     game.afterSave = null
     try {
       localStorage.removeItem(TOKEN_KEY)
@@ -164,10 +168,23 @@ export async function pullProgres() {
   }
 }
 
+// ---------- foto profil ----------
+export async function refreshProfil() {
+  if (!sesi.role) return
+  try {
+    sesi.profil = await api<Record<Role, { src: string; at: number } | null>>('profil')
+  } catch {
+    /* abaikan: tampil inisial */
+  }
+}
+
 function startSync() {
   game.afterSave = sesi.role === 'dilla' ? pushProgres : null
 }
-if (sesi.role) startSync()
+if (sesi.role) {
+  startSync()
+  void refreshProfil()
+}
 
 // ---------- jumlah surat belum dibaca ----------
 // Penanda "sudah dibaca" yang sedang dikirim. Badge di lobi menunggu ini selesai dulu: tanpa itu,

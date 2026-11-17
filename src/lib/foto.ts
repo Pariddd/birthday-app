@@ -21,3 +21,4 @@ export async function kompres(file: File): Promise<{ blob: Blob; w: number; h: n
   }
   throw new Error('Fotonya terlalu besar')
 }
+

@@ -8,6 +8,7 @@
   import ArcadeHeader from '../components/ArcadeHeader.svelte'
   import RuangGate from '../components/RuangGate.svelte'
   import Icon from '../components/Icon.svelte'
+  import Avatar from '../components/Avatar.svelte'
   import { kompres } from '../lib/foto'
 
   type Item = { id: string; by: Role; caption: string; at: number; w: number; h: number; love: Role[]; src: string }
@@ -167,7 +168,7 @@
             <img src={it.src} alt={it.caption || `Foto dari ${nama(it.by)}`} loading="lazy" decoding="async" width={it.w || undefined} height={it.h || undefined} />
             {#if it.caption}<span class="cap hand">{it.caption}</span>{/if}
             <span class="foot">
-              <span class="by" class:dilla={it.by === 'dilla'}>{nama(it.by)}</span>
+              <span class="by" class:dilla={it.by === 'dilla'}><Avatar role={it.by} size={16} /> {nama(it.by)}</span>
               {#if it.love.length}<span class="hearts" aria-label="{it.love.length} suka">{'♥'.repeat(it.love.length)}</span>{/if}
             </span>
           </button>
@@ -224,7 +225,7 @@
     </div>
     <div class="lb-card">
       {#if cur.caption}<p class="hand lb-cap">{cur.caption}</p>{/if}
-      <p class="lb-meta">dari <b>{nama(cur.by)}</b> · {waktu(cur.at)}</p>
+      <p class="lb-meta"><Avatar role={cur.by} size={22} /> dari <b>{nama(cur.by)}</b> · {waktu(cur.at)}</p>
       <div class="lb-acts">
         <button class="icon-btn" aria-label="Sebelumnya" onclick={() => geser(-1)}><Icon name="left" /></button>
         <button class="lovebtn" class:on={me && cur.love.includes(me)} aria-pressed={!!me && cur.love.includes(me)} onclick={() => love(cur)}>
@@ -344,6 +345,10 @@
     align-items: center;
   }
   .by {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding-left: 2px !important;
     font-size: 10.5px;
     font-weight: 900;
     padding: 1px 7px;
@@ -490,6 +495,9 @@
     color: var(--ink);
   }
   .lb-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
     font-size: 12.5px;
     font-weight: 700;
     color: var(--muted);
