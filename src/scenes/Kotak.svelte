@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount, tick } from 'svelte'
-  import { fly } from 'svelte/transition'
+  import { fly, fade } from 'svelte/transition'
   import { config } from '../config'
   import { sesi, api, ApiError, tandaiDibaca, tutupNotif, type Role } from '../lib/ruang.svelte'
   import { sfx } from '../lib/audio'
@@ -9,11 +9,15 @@
   import RuangGate from '../components/RuangGate.svelte'
   import NotifToggle from '../components/NotifToggle.svelte'
   import Icon from '../components/Icon.svelte'
+  import { kompres } from '../lib/foto'
 
-  type Msg = { id: number; from: Role; text: string; at: number; status?: 'sending' | 'failed' }
+  type Foto = { id?: string; w: number; h: number; src: string }
+  type Msg = { id: number; from: Role; text: string; at: number; foto?: Foto; status?: 'sending' | 'failed'; _blob?: Blob }
+  type Lampiran = { blob: Blob; url: string; w: number; h: number }
 
   const POLL_MS = 7000
   const MAX = 1000
+  const MAX_CAPTION = 300 // keterangan foto
 
   let msgs = $state<Msg[]>([])
   let read = $state<Record<Role, number>>({ dilla: 0, parid: 0 })
@@ -23,6 +27,11 @@
   let list = $state<HTMLDivElement>()
   let ta = $state<HTMLTextAreaElement>()
   let tmp = -1
+  let lampiran = $state<Lampiran | null>(null)
+  let menyiapkan = $state(false)
+  let picker = $state<HTMLInputElement>()
+  let lihat = $state<Foto | null>(null)
+  const batas = $derived(lampiran ? MAX_CAPTION : MAX)
 
   const me = $derived(sesi.role)
   const lastId = $derived(msgs.reduce((m, x) => (x.id > m ? x.id : m), 0))
@@ -94,9 +103,66 @@
     if (me && !loaded) void poll(true)
   })
 
+  async function pilihFoto(e: Event) {
+    const input = e.currentTarget as HTMLInputElement
+    const file = input.files?.[0]
+    input.value = ''
+    if (!file) return
+    menyiapkan = true
+    try {
+      const r = await kompres(file)
+      if (lampiran) URL.revokeObjectURL(lampiran.url)
+      lampiran = { ...r, url: URL.createObjectURL(r.blob) }
+      ta?.focus()
+    } catch {
+      game.say('File itu tidak bisa dibaca sebagai foto.')
+    } finally {
+      menyiapkan = false
+    }
+  }
+
+  function batalFoto() {
+    if (lampiran) URL.revokeObjectURL(lampiran.url)
+    lampiran = null
+  }
+
+  const urut = (a: Msg, b: Msg) => (a.id < 0 ? Infinity : a.id) - (b.id < 0 ? Infinity : b.id)
+
+  async function kirimFoto(l: Lampiran, t: string, ulang?: Msg) {
+    if (!me) return
+    const draft: Msg = ulang ?? { id: tmp--, from: me, text: t, at: Date.now(), foto: { w: l.w, h: l.h, src: l.url }, status: 'sending', _blob: l.blob }
+    if (ulang) msgs = msgs.map((m) => (m.id === ulang.id ? { ...m, status: 'sending' } : m))
+    else msgs = [...msgs, draft]
+    sfx.tap()
+    await toBottom()
+    try {
+      const r = await api<{ message: Msg }>('pesan', {
+        method: 'POST',
+        raw: l.blob,
+        headers: { 'content-type': 'image/jpeg', 'x-text': encodeURIComponent(t), 'x-w': String(l.w), 'x-h': String(l.h) },
+      })
+      msgs = msgs.map((m) => (m.id === draft.id ? r.message : m)).sort(urut)
+      read = { ...read, [me]: Math.max(read[me], r.message.id) }
+      setTimeout(() => URL.revokeObjectURL(l.url), 5000) // biarkan <img> server sempat dimuat
+    } catch (e) {
+      msgs = msgs.map((m) => (m.id === draft.id ? { ...m, status: 'failed' } : m))
+      game.say(e instanceof ApiError ? e.message : 'Fotonya gagal terkirim.')
+    }
+  }
+
   async function send(isi = text) {
     const t = isi.trim()
-    if (!t || !me) return
+    if (!me) return
+    if (lampiran && isi === text) {
+      if ([...t].length > MAX_CAPTION) return game.say(`Keterangan foto maksimal ${MAX_CAPTION} karakter ya.`)
+      const l = lampiran
+      lampiran = null
+      text = ''
+      await tick()
+      resize()
+      return kirimFoto(l, t)
+    }
+    if (!t) return
     if ([...t].length > MAX) return game.say(`Maksimal ${MAX} karakter ya.`)
     const draft: Msg = { id: tmp--, from: me, text: t, at: Date.now(), status: 'sending' }
     msgs = [...msgs, draft]
@@ -107,7 +173,7 @@
     await toBottom()
     try {
       const r = await api<{ message: Msg }>('pesan', { body: { text: t } })
-      msgs = msgs.map((m) => (m.id === draft.id ? r.message : m)).sort((a, b) => (a.id < 0 ? Infinity : a.id) - (b.id < 0 ? Infinity : b.id))
+      msgs = msgs.map((m) => (m.id === draft.id ? r.message : m)).sort(urut)
       read = { ...read, [me]: Math.max(read[me], r.message.id) }
     } catch (e) {
       msgs = msgs.map((m) => (m.id === draft.id ? { ...m, status: 'failed' } : m))
@@ -116,6 +182,7 @@
   }
 
   function retry(m: Msg) {
+    if (m.foto && m._blob) return void kirimFoto({ blob: m._blob, url: m.foto.src, w: m.foto.w, h: m.foto.h }, m.text, m)
     msgs = msgs.filter((x) => x.id !== m.id)
     void send(m.text)
   }
@@ -175,7 +242,12 @@
             <div class="row" class:mine in:fly={{ y: 10, duration: 220 }}>
               <div class="bubble" class:mine class:failed={m.status === 'failed'}>
                 {#if !mine && (i === 0 || msgs[i - 1].from !== m.from)}<span class="who hand">{nama(m.from)}</span>{/if}
-                <p>{m.text}</p>
+                {#if m.foto}
+                  <button class="photo" style="aspect-ratio:{m.foto.w && m.foto.h ? `${m.foto.w}/${m.foto.h}` : '4/3'}" onclick={() => (lihat = m.foto!)} aria-label="Lihat foto">
+                    <img src={m.foto.src} alt={m.text || `Foto dari ${nama(m.from)}`} loading="lazy" decoding="async" />
+                  </button>
+                {/if}
+                {#if m.text}<p>{m.text}</p>{/if}
                 <span class="meta">
                   {m.status === 'sending' ? 'mengirim…' : m.status === 'failed' ? 'gagal' : jam(m.at)}
                   {#if mine && m.id === lastMine?.id && !m.status}
@@ -201,6 +273,14 @@
         </div>
       {/if}
 
+      {#if lampiran || menyiapkan}
+        <div class="attach" transition:fade={{ duration: 150 }}>
+          {#if lampiran}<img src={lampiran.url} alt="Foto yang akan dikirim" />{:else}<div class="thumb ph"></div>{/if}
+          <span>{menyiapkan ? 'menyiapkan foto…' : 'Foto siap dikirim. Tulis keterangan kalau mau.'}</span>
+          <button class="icon-btn" type="button" aria-label="Batal kirim foto" onclick={batalFoto} disabled={menyiapkan}><Icon name="close" size={18} /></button>
+        </div>
+      {/if}
+
       <form
         class="compose"
         onsubmit={(e) => {
@@ -208,14 +288,28 @@
           void send()
         }}
       >
+        <button class="pick" type="button" aria-label="Kirim foto" onclick={() => picker?.click()} disabled={menyiapkan}><Icon name="image" size={22} /></button>
+        <input bind:this={picker} class="sr-only" type="file" accept="image/*" onchange={pilihFoto} tabindex="-1" aria-hidden="true" />
         <label class="sr-only" for="surat-in">Tulis surat</label>
-        <textarea id="surat-in" bind:this={ta} bind:value={text} rows="1" maxlength={MAX + 50} placeholder="Tulis surat buat {sesi.lawan}…" oninput={resize} onkeydown={onKey}></textarea>
-        <button class="send" type="submit" aria-label="Kirim" disabled={!text.trim()}><Icon name="send" size={22} /></button>
+        <textarea id="surat-in" bind:this={ta} bind:value={text} rows="1" maxlength={batas + 50} placeholder={lampiran ? 'Keterangan foto (opsional)…' : `Tulis surat buat ${sesi.lawan}…`} oninput={resize} onkeydown={onKey}></textarea>
+        <button class="send" type="submit" aria-label="Kirim" disabled={(!text.trim() && !lampiran) || menyiapkan}><Icon name="send" size={22} /></button>
       </form>
-      {#if [...text].length > MAX - 150}<p class="count" class:over={[...text].length > MAX}>{[...text].length}/{MAX}</p>{/if}
+      {#if [...text].length > batas - 100}<p class="count" class:over={[...text].length > batas}>{[...text].length}/{batas}</p>{/if}
     </div>
   </RuangGate>
 </section>
+
+{#if lihat}
+  <div class="viewer overlay-fixed" role="dialog" aria-modal="true" aria-label="Foto" transition:fade={{ duration: 180 }}>
+    <div class="vtop">
+      <a class="icon-btn" href={lihat.src} download="foto-kotak-surat.jpg" aria-label="Simpan foto"><Icon name="download" /></a>
+      <button class="icon-btn" aria-label="Tutup" onclick={() => (lihat = null)}><Icon name="close" /></button>
+    </div>
+    <button class="vimg" onclick={() => (lihat = null)} aria-label="Tutup foto"><img src={lihat.src} alt="" /></button>
+  </div>
+{/if}
+
+<svelte:window onkeydown={(e) => e.key === 'Escape' && (lihat = null)} />
 
 <style>
   .scene.kotak {
@@ -384,6 +478,100 @@
   }
   textarea:focus {
     outline: 3px solid var(--pink-soft);
+  }
+  .photo {
+    display: block;
+    width: min(220px, 58vw);
+    max-height: 300px;
+    margin: 2px 0;
+    padding: 0;
+    border: 2px solid var(--ink);
+    border-radius: 10px;
+    overflow: hidden;
+    background: #eef3fb;
+    cursor: zoom-in;
+  }
+  .photo img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .attach {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 6px 6px 8px;
+    background: #fff;
+    border: 2px solid var(--ink);
+    border-radius: 14px;
+    flex-shrink: 0;
+  }
+  .attach img,
+  .thumb {
+    width: 52px;
+    height: 52px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1.5px solid var(--ink);
+    flex-shrink: 0;
+  }
+  .attach span {
+    flex: 1;
+    font-size: 12.5px;
+    font-weight: 800;
+    color: var(--muted);
+  }
+  .pick {
+    width: 50px;
+    height: 50px;
+    flex-shrink: 0;
+    border: 2.5px solid var(--ink);
+    border-radius: 50%;
+    background: #fff4cc;
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+  .pick:disabled {
+    opacity: 0.6;
+  }
+  .viewer {
+    z-index: 75;
+    background: rgba(22, 30, 60, 0.94);
+    display: flex;
+    flex-direction: column;
+    padding: calc(14px + var(--safe-top)) 14px calc(16px + var(--safe-bottom));
+    gap: 12px;
+  }
+  .vtop {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+  }
+  .vtop a {
+    color: var(--ink);
+  }
+  .vimg {
+    flex: 1;
+    min-height: 0;
+    border: none;
+    background: none;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: zoom-out;
+  }
+  .vimg img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    border: 5px solid #fff;
+    border-radius: 4px;
+    background: #fff;
   }
   .send {
     width: 50px;

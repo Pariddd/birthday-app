@@ -1,15 +1,18 @@
-// /api/foto?id=…&t=… — menyajikan foto album dari Blob PRIVATE, hanya dengan token lihat yang valid.
+// /api/foto?k=album|pesan&id=…&t=… — menyajikan foto dari Blob PRIVATE, hanya dengan token lihat yang valid.
 import { blob } from '../server/blob.js'
 import { route, HttpError } from '../server/http.js'
 import { checkView } from '../server/auth.js'
-
-const ID_RE = /^[a-z0-9]{10,24}$/
+import { ID_RE, FOLDERS, blobPath, type Folder } from '../server/gambar.js'
 
 export default route({
   async GET(req, url) {
     const id = url.searchParams.get('id') || ''
-    if (!ID_RE.test(id) || !checkView(id, url.searchParams.get('t'))) throw new HttpError(403, 'Tidak boleh')
-    const r = await blob().get(`album/${id}`, req.headers.get('if-none-match') ?? undefined)
+    const k = (url.searchParams.get('k') || 'album') as Folder
+    if (!FOLDERS.includes(k) || !ID_RE.test(id)) throw new HttpError(400, 'Tidak valid')
+    const path = blobPath(k, id)
+    // Token mengikat folder + id: token foto album tidak bisa dipakai membuka foto lain.
+    if (!checkView(path, url.searchParams.get('t'))) throw new HttpError(403, 'Tidak boleh')
+    const r = await blob().get(path, req.headers.get('if-none-match') ?? undefined)
     if (!r) throw new HttpError(404, 'Foto tidak ditemukan')
     const headers: Record<string, string> = {
       etag: r.etag,

@@ -8,11 +8,11 @@
   import ArcadeHeader from '../components/ArcadeHeader.svelte'
   import RuangGate from '../components/RuangGate.svelte'
   import Icon from '../components/Icon.svelte'
+  import { kompres } from '../lib/foto'
 
   type Item = { id: string; by: Role; caption: string; at: number; w: number; h: number; love: Role[]; src: string }
   type Pending = { key: number; url: string; blob: Blob | null; w: number; h: number; caption: string; status: 'siap' | 'kirim' | 'gagal' | 'ok'; err?: string }
 
-  const MAX_SIDE = 1600
   const ROT = [-2.5, 1.8, -1.2, 2.4, -1.8, 1.2]
 
   let items = $state<Item[]>([])
@@ -46,27 +46,6 @@
     if (me && !loaded) void load()
   })
 
-  /** Kecilkan foto di HP sebelum upload: sisi terpanjang 1600 px, JPEG. Hemat kuota & cepat. */
-  async function compress(file: File): Promise<{ blob: Blob; w: number; h: number }> {
-    const bmp = await createImageBitmap(file) // orientasi EXIF ikut diterapkan (default 'from-image')
-    const s = Math.min(1, MAX_SIDE / Math.max(bmp.width, bmp.height))
-    const w = Math.round(bmp.width * s)
-    const h = Math.round(bmp.height * s)
-    const c = document.createElement('canvas')
-    c.width = w
-    c.height = h
-    const ctx = c.getContext('2d')!
-    ctx.fillStyle = '#fff' // PNG transparan → latar putih, bukan hitam
-    ctx.fillRect(0, 0, w, h)
-    ctx.drawImage(bmp, 0, 0, w, h)
-    bmp.close()
-    for (const q of [0.82, 0.7, 0.55]) {
-      const blob = await new Promise<Blob | null>((r) => c.toBlob(r, 'image/jpeg', q))
-      if (blob && blob.size < 3.8 * 1024 * 1024) return { blob, w, h }
-    }
-    throw new Error('Fotonya terlalu besar')
-  }
-
   async function pilih(e: Event) {
     const files = [...((e.currentTarget as HTMLInputElement).files ?? [])].slice(0, 10)
     ;(e.currentTarget as HTMLInputElement).value = ''
@@ -76,7 +55,7 @@
     for (let i = 0; i < files.length; i++) {
       const k = baru[i].key
       try {
-        const r = await compress(files[i])
+        const r = await kompres(files[i])
         pending = pending.map((p) => (p.key === k ? { ...p, ...r, url: URL.createObjectURL(r.blob) } : p))
       } catch {
         pending = pending.map((p) => (p.key === k ? { ...p, status: 'gagal', err: 'File ini tidak bisa dibaca sebagai foto.' } : p))
