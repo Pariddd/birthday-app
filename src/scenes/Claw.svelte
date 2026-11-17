@@ -11,6 +11,7 @@
   import Rekap from '../components/Rekap.svelte'
   import { KARTU_DOA } from '../doa'
   import Icon from '../components/Icon.svelte'
+  import { rarityFoto, RARITY, acak, type RarityFoto } from '../rarity'
 
   const SLOTS: [number, number, number][] = [
     [140, 372, 28], [198, 378, 26], [254, 372, 28], [296, 380, 20],
@@ -22,25 +23,31 @@
   const RAIL_Y = 112
   const CHUTE_X = 70
 
-  // Isi mesin: 8 foto dulu → setelah habis "diisi ulang" kartu doa → setelah habis: stok habis.
-  const legendaryFoto = config.foto.findIndex((f) => (f as { legendary?: boolean }).legendary)
-  const legendaryDoa = KARTU_DOA.findIndex((k) => k.rarity === 'legendary')
-  const sisaFoto = $derived(config.foto.map((_, i) => i).filter((i) => !game.collected.includes(i)))
-  const sisaDoa = $derived(KARTU_DOA.map((_, i) => i).filter((i) => !game.doa.includes(i)))
+  // Isi mesin: semua foto dulu → setelah habis "diisi ulang" kartu doa → setelah habis: stok habis.
+  // Isi kapsul DIACAK tiap kali mesin dibuka; foto yang didapat = isi kapsul yang kamu capit.
+  // Warna kapsul memberi petunjuk kelangkaan: emas = legendary, ungu = epic, lainnya common.
+  const urutFoto = acak(config.foto.map((_, i) => i))
+  const urutDoa = acak(KARTU_DOA.map((_, i) => i))
+  const sisaFoto = $derived(urutFoto.filter((i) => !game.collected.includes(i)))
+  const sisaDoa = $derived(urutDoa.filter((i) => !game.doa.includes(i)))
   const mode = $derived<'foto' | 'doa' | 'habis'>(sisaFoto.length ? 'foto' : sisaDoa.length ? 'doa' : 'habis')
   const remaining = $derived(mode === 'foto' ? sisaFoto : mode === 'doa' ? sisaDoa : [])
-  const legendaryIdx = $derived(mode === 'foto' ? legendaryFoto : legendaryDoa)
-  // legendary selalu keluar terakhir
-  const queue = $derived([...remaining.filter((i) => i !== legendaryIdx), ...remaining.filter((i) => i === legendaryIdx)])
+  const tier = (i: number): RarityFoto => {
+    if (mode === 'foto') return rarityFoto(i)
+    const r = KARTU_DOA[i]?.rarity
+    return r === 'legendary' ? 'legendary' : r === 'rare' ? 'epic' : 'common'
+  }
 
-  const capsules = $derived(remaining.slice(0, SLOTS.length).map((photo, k) => ({ photo, slot: k, gold: photo === legendaryIdx })))
+  const capsules = $derived(remaining.slice(0, SLOTS.length).map((photo, k) => ({ photo, slot: k, tier: tier(photo) })))
+  const TOP = (c: { tier: RarityFoto; slot: number }) => (c.tier === 'legendary' ? '#F2B84B' : c.tier === 'epic' ? '#9B7BEA' : COLORS[c.slot % COLORS.length])
+  const BOTTOM = (t: RarityFoto) => (t === 'legendary' ? '#FFF4CC' : t === 'epic' ? '#EFE7FF' : '#FFFFFF')
   const SIGN = { foto: 'CAPIT FOTO', doa: 'CAPIT DOA', habis: 'STOK HABIS' } as const
 
   const claw = $state({ x: 200, len: 40, open: 1 })
   let busy = $state(false)
   let attempts = $state(0)
   let bubble = $state('')
-  let held = $state<{ slot: number; x: number; y: number; gold: boolean; color: string } | null>(null)
+  let held = $state<{ slot: number; x: number; y: number; tier: RarityFoto; color: string } | null>(null)
   let hiddenSlot = $state<number | null>(null)
   let prize = $state<{ kind: 'foto' | 'doa'; idx: number } | null>(null)
   let rekap = $state(false)
@@ -48,7 +55,7 @@
   function closePrize() {
     const wasFoto = prize?.kind === 'foto'
     prize = null
-    // foto ke-8 baru saja didapat → tampilkan poster Rekap Kenangan
+    // foto terakhir baru saja didapat → tampilkan poster Rekap Kenangan
     if (wasFoto && game.collected.length === config.foto.length) rekap = true
   }
 
@@ -98,11 +105,8 @@
     game.save()
     sfx.coin()
 
-    // Hasil ditentukan dulu, animasi menyesuaikan. Pity: pasti dapat di percobaan ke-3.
-    const win = attempts >= 3 || Math.random() < 0.4
-    const photo = queue[0]
     const kind = mode as 'foto' | 'doa'
-    // kapsul terdekat dari posisi capit
+    // kapsul terdekat dari posisi capit = yang dicapit
     let best = capsules[0]
     let bd = Infinity
     for (const c of capsules) {
@@ -112,6 +116,10 @@
         best = c
       }
     }
+    // Hasil ditentukan dulu, animasi menyesuaikan. Peluang & jaminan (pity) tergantung kelangkaan kapsulnya.
+    const aturan = RARITY[best.tier]
+    const win = attempts >= aturan.pity || Math.random() < aturan.peluang
+    const photo = best.photo
     const [sx, sy, sr] = SLOTS[best.slot]
     const depth = sy - sr - RAIL_Y - 44
     const tl = gsap.timeline({
@@ -125,7 +133,7 @@
       .to(claw, { open: 0, duration: 0.25 })
       .add(() => {
         hiddenSlot = best.slot
-        held = { slot: best.slot, x: sx, y: sy, gold: best.gold, color: COLORS[best.slot % COLORS.length] }
+        held = { slot: best.slot, x: sx, y: sy, tier: best.tier, color: TOP(best) }
       })
 
     if (win) {
@@ -155,7 +163,10 @@
         })
         .to(claw, { open: 0.6, duration: 0.1 })
         .add(() => {
-          bubble = ['dikit lagi!', 'yaah, licin…', 'hampir!!'][attempts % 3]
+          bubble =
+            best.tier === 'legendary'
+              ? ['kapsul emas licin banget…', 'legendary memang susah!', 'hampir!!'][attempts % 3]
+              : ['dikit lagi!', 'yaah, licin…', 'hampir!!'][attempts % 3]
           sfx.wrong()
           if (held) {
             const h = { y: held.y }
@@ -201,9 +212,10 @@
         {#if hiddenSlot !== c.slot}
           {@const s = SLOTS[c.slot]}
           <g stroke-width="2.2">
-            <circle cx={s[0]} cy={s[1]} r={s[2]} fill={c.gold ? '#FFF4CC' : '#FFFFFF'} />
-            <path d="M{s[0] - s[2]} {s[1]} A{s[2]} {s[2]} 0 0 1 {s[0] + s[2]} {s[1]} Z" fill={c.gold ? '#F2B84B' : COLORS[c.slot % COLORS.length]} />
-            {#if c.gold}<path d="M{s[0]} {s[1] - s[2] - 4} l0 -8 M{s[0] + s[2]} {s[1] - s[2] + 4} l6 -6 M{s[0] - s[2]} {s[1] - s[2] + 4} l-6 -6" stroke="#F2B84B" />{/if}
+            <circle cx={s[0]} cy={s[1]} r={s[2]} fill={BOTTOM(c.tier)} />
+            <path d="M{s[0] - s[2]} {s[1]} A{s[2]} {s[2]} 0 0 1 {s[0] + s[2]} {s[1]} Z" fill={TOP(c)} />
+            {#if c.tier === 'legendary'}<path d="M{s[0]} {s[1] - s[2] - 4} l0 -8 M{s[0] + s[2]} {s[1] - s[2] + 4} l6 -6 M{s[0] - s[2]} {s[1] - s[2] + 4} l-6 -6" stroke="#F2B84B" />{/if}
+            {#if c.tier === 'epic'}<path d="M{s[0] + s[2] - 2} {s[1] - s[2] - 2} l3 -7 M{s[0] - s[2] + 2} {s[1] - s[2] - 2} l-3 -7" stroke="#9B7BEA" />{/if}
           </g>
         {/if}
       {/each}
@@ -214,8 +226,8 @@
       <path d={prongs} />
       {#if held}
         <g stroke-width="2.2">
-          <circle cx={held.x} cy={held.y} r="24" fill={held.gold ? '#FFF4CC' : '#FFFFFF'} />
-          <path d="M{held.x - 24} {held.y} A24 24 0 0 1 {held.x + 24} {held.y} Z" fill={held.gold ? '#F2B84B' : held.color} />
+          <circle cx={held.x} cy={held.y} r="24" fill={BOTTOM(held.tier)} />
+          <path d="M{held.x - 24} {held.y} A24 24 0 0 1 {held.x + 24} {held.y} Z" fill={held.color} />
         </g>
       {/if}
 
@@ -241,8 +253,13 @@
         <button class="grab refill" onclick={refill}>Koin habis…</button>
       {/if}
     </div>
+    <div class="legend" aria-label="Arti warna kapsul">
+      <span><i class="dot c"></i>common</span>
+      <span><i class="dot e"></i>epic</span>
+      <span><i class="dot l"></i>legendary</span>
+    </div>
     <div class="note">
-      <span>{attempts > 0 ? `Percobaan ke-${attempts + 1}` : 'Geser capitnya, lalu tekan Capit!'}</span>
+      <span>{attempts > 0 ? `Percobaan ke-${attempts + 1}` : 'Pilih kapsulnya, lalu Capit!'}</span>
       <b>{mode === 'foto' ? `${game.collected.length}/${config.foto.length} foto` : `${game.doa.length}/${KARTU_DOA.length} doa`}</b>
     </div>
   {/if}
@@ -275,6 +292,35 @@
     width: auto;
     max-width: 100%;
     overflow: visible;
+  }
+  .legend {
+    margin-top: 10px;
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--muted);
+  }
+  .legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid var(--ink);
+  }
+  .dot.c {
+    background: linear-gradient(#f28aa5 50%, #fff 50%);
+  }
+  .dot.e {
+    background: linear-gradient(#9b7bea 50%, #efe7ff 50%);
+  }
+  .dot.l {
+    background: linear-gradient(#f2b84b 50%, #fff4cc 50%);
   }
   .bubble {
     position: absolute;

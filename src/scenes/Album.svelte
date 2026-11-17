@@ -8,8 +8,8 @@
   import Icon from '../components/Icon.svelte'
   import Rekap from '../components/Rekap.svelte'
   import { KARTU_DOA, DOA_GAME } from '../doa'
+  import { fotos, rarityFoto } from '../rarity'
 
-  const fotos = config.foto as ((typeof config.foto)[number] & { legendary?: boolean })[]
   let open = $state<number | null>(null)
   let rekap = $state(false)
   const tilt = [-3, 2, 1.5, -1.5, -2, 2.5, 1, -2]
@@ -25,15 +25,18 @@
   <div class="grid">
     {#each fotos as f, i (i)}
       {#if game.collected.includes(i)}
-        <button class="pol" class:gold={f.legendary} style="rotate:{tilt[i]}deg" onclick={() => (open = i)} use:longpress={() => game.findSecret(1)} aria-label="Foto {i + 1}: {f.caption}">
+        <button class="pol" class:gold={rarityFoto(i) === 'legendary'} class:epic={rarityFoto(i) === 'epic'} style="rotate:{tilt[i % tilt.length]}deg" onclick={() => (open = i)} use:longpress={() => game.findSecret(1)} aria-label="Foto {i + 1}: {f.caption}">
           <span class="img"><Photo src={f.src} alt="" label="[FOTO {i + 1}]" /></span>
           <span class="cap hand">{f.caption.length > 22 ? f.caption.slice(0, 20) + '…' : f.caption}</span>
         </button>
       {:else}
-        <div class="lock" class:gold={f.legendary} style="rotate:{tilt[i]}deg">
-          {#if f.legendary}
+        <div class="lock" class:gold={rarityFoto(i) === 'legendary'} class:epic={rarityFoto(i) === 'epic'} style="rotate:{tilt[i % tilt.length]}deg">
+          {#if rarityFoto(i) === 'legendary'}
             <Icon name="star" size={30} color="#8A6414" stroke={1.6} />
             <b>Legendary</b><small>masih misteri</small>
+          {:else if rarityFoto(i) === 'epic'}
+            <Icon name="star" size={26} color="#7A55D6" stroke={1.8} />
+            <b>Epic</b><small>belum dapet</small>
           {:else}
             <Icon name="lock" size={28} color="#6B6585" stroke={2} />
             <b>belum dapet</b>
@@ -79,7 +82,7 @@
   {#if open !== null}
     <div class="lb-back overlay-fixed" role="presentation" onclick={() => (open = null)} transition:fade={{ duration: 150 }}></div>
     <div class="lightbox" role="dialog" aria-modal="true" aria-label="Foto {open + 1}" transition:scale={{ start: 0.9, duration: 200 }}>
-      <div class="lb-img" class:gold={fotos[open].legendary} use:longpress={() => game.findSecret(1)}><Photo src={fotos[open].src} alt="Foto {open + 1}" label="[FOTO {open + 1}]" /></div>
+      <div class="lb-img" class:gold={rarityFoto(open) === 'legendary'} class:epic={rarityFoto(open) === 'epic'} use:longpress={() => game.findSecret(1)}><Photo src={fotos[open].src} alt="Foto {open + 1}" label="[FOTO {open + 1}]" /></div>
       <p class="hand">{fotos[open].caption}</p>
       <button class="icon-btn close" aria-label="Tutup" onclick={() => (open = null)}><Icon name="close" /></button>
     </div>
@@ -188,6 +191,21 @@
     gap: 6px;
     font-size: 13px;
     color: #5a5478;
+  }
+  .pol.epic {
+    border-color: #7a55d6;
+    background: #efe7ff;
+    box-shadow:
+      3px 3px 0 var(--ink),
+      0 0 0 4px #c3b1f0;
+  }
+  .lock.epic {
+    border: 2.5px dashed #9b7bea;
+    background: #efe7ff;
+    color: #5b3fb0;
+  }
+  .lb-img.epic {
+    border: 4px solid #9b7bea;
   }
   .lock.gold {
     border: 2.5px dashed #c9962a;

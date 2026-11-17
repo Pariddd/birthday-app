@@ -20,8 +20,12 @@ export const config = {
 
   musik: "/audio/lagu.mp3",
 
-  // 8 foto untuk claw machine & album. Urutan = urutan foto keluar dari kapsul.
-  // Foto dengan legendary: true selalu keluar paling terakhir dan berbingkai emas.
+  // Foto untuk claw machine & album. Jumlahnya bebas (8, 12, 20, …).
+  // Isi kapsul diacak tiap kali mesin dibuka. Kelangkaan diatur lewat `rarity`:
+  //   "common"    → kapsul warna-warni, gampang dicapit (tanpa `rarity` = common)
+  //   "epic"      → kapsul ungu, lebih susah, bingkai ungu
+  //   "legendary" → kapsul emas, paling susah, bingkai emas
+  // Tambah foto: taruh file di public/photos/ (mis. foto-9.jpeg) lalu tambahkan satu baris di bawah.
   foto: [
     {
       src: "/photos/foto-1.jpeg",
@@ -49,9 +53,12 @@ export const config = {
       src: "/photos/foto-8.jpeg",
       caption:
         "sukaa banget first time diajarin gaya sama dilla dan hasilnya cakepp dehh",
-      legendary: true,
+      rarity: "legendary",
     },
-  ],
+    // Contoh menambah foto (hapus tanda // di depannya, ganti caption-nya):
+    // { src: "/photos/foto-9.jpeg", caption: "caption foto 9", rarity: "epic" },
+    // { src: "/photos/foto-10.jpeg", caption: "caption foto 10" },
+  ] as { src: string; caption: string; rarity?: "common" | "epic" | "legendary" }[],
 
   // Memory match memakai 4 foto ini (index 0–7 dari daftar foto di atas)
   fotoMemory: [0, 1, 2, 3],
@@ -107,4 +114,4 @@ export const config = {
   koinAwal: 5,
 };
 
-export type Foto = (typeof config.foto)[number] & { legendary?: boolean };
+export type Foto = (typeof config.foto)[number];

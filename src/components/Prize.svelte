@@ -6,9 +6,11 @@
   import { reducedMotion } from '../lib/state.svelte'
   import Photo from './Photo.svelte'
   import Icon from './Icon.svelte'
+  import { rarityFoto, RARITY } from '../rarity'
 
   let { index, onclose }: { index: number; onclose: () => void } = $props()
-  const foto = $derived(config.foto[index] as (typeof config.foto)[number] & { legendary?: boolean })
+  const foto = $derived(config.foto[index])
+  const tier = $derived(rarityFoto(index))
   let flipped = $state(false)
   let root: HTMLDivElement
 
@@ -23,19 +25,19 @@
 </script>
 
 <div class="overlay overlay-fixed" bind:this={root} role="dialog" aria-modal="true" aria-labelledby="prize-t" transition:fade={{ duration: 200 }}>
-  <svg class="rays" aria-hidden="true" viewBox="0 0 390 844" preserveAspectRatio="xMidYMid slice" fill="none" stroke={foto.legendary ? '#F6D58E' : '#C3B1F0'} stroke-width="3" stroke-linecap="round">
+  <svg class="rays" aria-hidden="true" viewBox="0 0 390 844" preserveAspectRatio="xMidYMid slice" fill="none" stroke={tier === 'legendary' ? '#F6D58E' : tier === 'epic' ? '#9B7BEA' : '#C3B1F0'} stroke-width="3" stroke-linecap="round">
     <path class="burst-line" d="M195 420 L195 120 M195 420 L340 160 M195 420 L380 330 M195 420 L370 560 M195 420 L300 720 M195 420 L90 720 M195 420 L20 560 M195 420 L10 330 M195 420 L50 160" />
   </svg>
 
   <div class="title">
-    <h2 id="prize-t" class="hand">{foto.legendary ? 'LEGENDARY!' : 'Dapet!'}</h2>
+    <h2 id="prize-t" class="hand" class:epic={tier === 'epic'} class:gold={tier === 'legendary'}>{RARITY[tier].judul}</h2>
     <p>Foto {index + 1} dari {config.foto.length}</p>
   </div>
 
   <div class="stagec">
     <!-- .frame = animasi pop-in (GSAP), .card3d = animasi balik (CSS).
          Dipisah karena GSAP meninggalkan inline transform yang menimpa class .flipped. -->
-    <button class="frame" class:legendary={foto.legendary} onclick={() => (flipped = !flipped)} aria-label={flipped ? 'Lihat foto' : 'Balik foto untuk baca tulisannya'} aria-pressed={flipped}>
+    <button class="frame" class:legendary={tier === 'legendary'} class:epic={tier === 'epic'} onclick={() => (flipped = !flipped)} aria-label={flipped ? 'Lihat foto' : 'Balik foto untuk baca tulisannya'} aria-pressed={flipped}>
       <div class="card3d" class:flipped>
         <div class="face front">
           <div class="photo"><Photo src={foto.src} alt="Foto kenangan {index + 1}" label="[FOTO {index + 1}]" /></div>
@@ -45,7 +47,7 @@
         </div>
       </div>
     </button>
-    <span class="tag" class:gold={foto.legendary}>{foto.legendary ? 'LEGENDARY' : 'LANGKA'}</span>
+    <span class="tag" class:gold={tier === 'legendary'} class:epic={tier === 'epic'}>{RARITY[tier].label}</span>
     <svg class="sticker s1" aria-hidden="true" viewBox="0 0 30 30" stroke="#23408E" stroke-width="2" stroke-linejoin="round"><path d="M15 2 l4 9 10 1 -8 7 2 10 -8 -5 -8 5 2 -10 -8 -7 10 -1z" fill="#F6D58E" /></svg>
     <svg class="sticker s2" aria-hidden="true" viewBox="0 0 40 40" stroke="#23408E" stroke-width="2" stroke-linejoin="round"><path d="M4 14 C4 4 16 0 20 10 C24 0 36 4 36 14 C36 28 20 38 20 38 C20 38 4 28 4 14 Z" fill="#F28AA5" /></svg>
     <svg class="sticker s3" aria-hidden="true" viewBox="0 0 24 24" stroke="#23408E" stroke-width="1.6" stroke-linejoin="round"><path d="M12 2 C12.6 8 14 10.6 22 12 C14 13.4 12.6 16 12 22 C11.4 16 10 13.4 2 12 C10 10.6 11.4 8 12 2Z" fill="#9CCBF0" /></svg>
@@ -176,6 +178,22 @@
   }
   .tag.gold {
     background: #f6d58e;
+  }
+  .tag.epic {
+    background: #9b7bea;
+    color: #fff;
+  }
+  .epic .front {
+    background-image: conic-gradient(#9b7bea 25%, transparent 0 50%, #9b7bea 0 75%, transparent 0);
+    box-shadow:
+      5px 5px 0 var(--ink),
+      0 0 0 6px #efe7ff;
+  }
+  h2.epic {
+    color: #7a55d6 !important;
+  }
+  h2.gold {
+    color: #b98a2a !important;
   }
   .sticker {
     position: absolute;

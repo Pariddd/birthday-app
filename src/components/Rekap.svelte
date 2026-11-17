@@ -5,6 +5,7 @@
   import { sfx } from '../lib/audio'
   import { burst } from '../lib/fx'
   import Icon from './Icon.svelte'
+  import { fotos, rarityFoto } from '../rarity'
 
   // Poster wallpaper 9:16 dari 8 foto, digambar di canvas langsung di HP (tanpa server).
   let { onclose, celebrate = false }: { onclose: () => void; celebrate?: boolean } = $props()
@@ -17,7 +18,6 @@
   const fileName = `rekap-kenangan-${config.nama.toLowerCase()}.png`
   const canShare = typeof navigator !== 'undefined' && !!navigator.canShare
 
-  const fotos = config.foto as ((typeof config.foto)[number] & { legendary?: boolean })[]
   // Umur yang sedang DIRAYAKAN (WIB): ulang tahun terakhir, kecuali ulang tahun berikutnya
   // tinggal ≤ 30 hari lagi — supaya poster tetap "21" walau dibuka/dites sehari sebelumnya.
   const umur = (() => {
@@ -107,30 +107,42 @@
     ctx.fillStyle = '#3B4566'
     ctx.fillText(tanggal, W / 2, 380)
 
-    // polaroid 3-3-2
-    const pos: [number, number][] = [
-      [230, 610], [540, 590], [850, 615],
-      [230, 1010], [540, 990], [850, 1015],
-      [385, 1400], [695, 1395],
-    ]
+    // Polaroid: tata letak menyesuaikan jumlah foto (8 → 3-3-2 seperti semula; lebih banyak → grid lebih rapat).
+    const n = fotos.length
+    const cols = n <= 4 ? 2 : n <= 9 ? 3 : n <= 16 ? 4 : 5
+    const rows = Math.ceil(n / cols)
+    const AREA = { x: 60, y: 420, w: 960, h: 1240 } // di antara judul & penutup
+    const cw = AREA.w / cols
+    const ch = AREA.h / rows
+    const k = Math.min(1, cw / 330, ch / 400) // skala polaroid agar muat
+    const pos: [number, number][] = []
+    for (let r = 0; r < rows; r++) {
+      const inRow = Math.min(cols, n - r * cols)
+      const off = ((cols - inRow) * cw) / 2 // baris terakhir yang tidak penuh: di tengah
+      for (let c = 0; c < inRow; c++) pos.push([AREA.x + off + cw * (c + 0.5), AREA.y + ch * (r + 0.5) + ((c % 2) * 2 - 1) * 10 * k])
+    }
     const rot = [-5, 3, -3, 4, -2, 5, -4, 3]
     const PW = 290
     const PH = 360
     const IW = 254
     const IH = 290
     fotos.forEach((f, i) => {
-      const [x, y] = pos[i] ?? pos[pos.length - 1]
+      const [x, y] = pos[i]
+      const t = rarityFoto(i)
+      const legendary = t === 'legendary'
+      const epic = t === 'epic'
       ctx.save()
       ctx.translate(x, y)
-      ctx.rotate((rot[i] * Math.PI) / 180)
+      ctx.scale(k, k)
+      ctx.rotate((rot[i % rot.length] * Math.PI) / 180)
       // bayangan pink
-      ctx.fillStyle = f.legendary ? '#F6D58E' : '#FBD3DE'
+      ctx.fillStyle = legendary ? '#F6D58E' : epic ? '#C3B1F0' : '#FBD3DE'
       ctx.fillRect(-PW / 2 + 12, -PH / 2 + 12, PW, PH)
       // bingkai
-      ctx.fillStyle = f.legendary ? '#FFF4CC' : '#FFFFFF'
+      ctx.fillStyle = legendary ? '#FFF4CC' : epic ? '#EFE7FF' : '#FFFFFF'
       ctx.fillRect(-PW / 2, -PH / 2, PW, PH)
       ctx.lineWidth = 5
-      ctx.strokeStyle = f.legendary ? '#B98A2A' : '#23408E'
+      ctx.strokeStyle = legendary ? '#B98A2A' : epic ? '#7A55D6' : '#23408E'
       ctx.strokeRect(-PW / 2, -PH / 2, PW, PH)
       // foto (object-fit: cover)
       const ix = -IW / 2
@@ -156,7 +168,7 @@
       ctx.fillStyle = '#23408E'
       ctx.font = '700 40px Caveat, cursive'
       ctx.textAlign = 'center'
-      ctx.fillText(f.legendary ? '★ legendary' : `#${i + 1}`, 0, PH / 2 - 16)
+      ctx.fillText(legendary ? '★ legendary' : epic ? '✦ epic' : `#${i + 1}`, 0, PH / 2 - 16)
       // selotip
       ctx.rotate(((i % 2 ? 6 : -6) * Math.PI) / 180)
       ctx.fillStyle = i % 2 ? 'rgba(142,211,190,0.65)' : 'rgba(242,138,165,0.6)'
@@ -215,7 +227,7 @@
 
   <div class="preview">
     {#if url}
-      <img src={url} alt="Poster rekap kenangan berisi 8 foto" in:scale={{ start: 0.7, duration: 450 }} />
+      <img src={url} alt="Poster rekap kenangan berisi {fotos.length} foto" in:scale={{ start: 0.7, duration: 450 }} />
     {:else if failed}
       <p class="wait">Posternya gagal dibuat di perangkat ini.</p>
     {:else}
